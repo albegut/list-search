@@ -1,3 +1,5 @@
+import * as React from 'react';
+import * as ReactDom from 'react-dom';
 import { Version } from '@microsoft/sp-core-library';
 import {
   IPropertyPaneConfiguration,
@@ -6,7 +8,10 @@ import {
 import { BaseClientSideWebPart } from '@microsoft/sp-webpart-base';
 import { escape } from '@microsoft/sp-lodash-subset';
 
-import styles from './ListSearchWebPart.module.scss';
+import {IListSearchProps} from './components/IListSearchProps';
+import ListSearch from './components/ListSearch';
+
+
 import * as strings from 'ListSearchWebPartStrings';
 
 export interface IListSearchWebPartProps {
@@ -16,21 +21,13 @@ export interface IListSearchWebPartProps {
 export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearchWebPartProps> {
 
   public render(): void {
-    this.domElement.innerHTML = `
-      <div class="${ styles.listSearch }">
-        <div class="${ styles.container }">
-          <div class="${ styles.row }">
-            <div class="${ styles.column }">
-              <span class="${ styles.title }">Welcome to SharePoint!</span>
-              <p class="${ styles.subTitle }">Customize SharePoint experiences using Web Parts.</p>
-              <p class="${ styles.description }">${escape(this.properties.description)}</p>
-              <a href="https://aka.ms/spfx" class="${ styles.button }">
-                <span class="${ styles.label }">Learn more</span>
-              </a>
-            </div>
-          </div>
-        </div>
-      </div>`;
+    const element: React.ReactElement<IListSearchProps> = React.createElement(
+      ListSearch,
+      {
+        description: this.properties.description,
+      }
+    );
+    ReactDom.render(element, this.domElement);
   }
 
   protected get dataVersion(): Version {
