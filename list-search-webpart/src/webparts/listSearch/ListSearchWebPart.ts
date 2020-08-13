@@ -15,7 +15,7 @@ import ListSearch from './components/ListSearch';
 import * as strings from 'ListSearchWebPartStrings';
 
 export interface IListSearchWebPartProps {
-  description: string;
+  ListName: string;
 }
 
 export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearchWebPartProps> {
@@ -24,7 +24,7 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
     const element: React.ReactElement<IListSearchProps> = React.createElement(
       ListSearch,
       {
-        description: this.properties.description,
+        ListName: this.properties.ListName,
       }
     );
     ReactDom.render(element, this.domElement);
@@ -45,8 +45,8 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
             {
               groupName: strings.BasicGroupName,
               groupFields: [
-                PropertyPaneTextField('description', {
-                  label: strings.DescriptionFieldLabel
+                PropertyPaneTextField('ListName', {
+                  label: strings.ListFieldLabel
                 })
               ]
             }

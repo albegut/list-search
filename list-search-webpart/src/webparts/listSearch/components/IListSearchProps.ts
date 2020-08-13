@@ -1,3 +1,3 @@
 export interface IListSearchProps{
-    description:string;
+    ListName:string;
 }

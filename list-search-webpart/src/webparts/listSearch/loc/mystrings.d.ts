@@ -1,7 +1,7 @@
 declare interface IListSearchWebPartStrings {
   PropertyPaneDescription: string;
   BasicGroupName: string;
-  DescriptionFieldLabel: string;
+  ListFieldLabel: string;
 }
 
 declare module 'ListSearchWebPartStrings' {

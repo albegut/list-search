@@ -7,21 +7,48 @@ import { IListSearchState } from './IListSearchState';
 import { IListSearchProps } from './IListSearchProps';
 
 import { Spinner, SpinnerSize } from 'office-ui-fabric-react/lib/Spinner';
-import { TextField } from 'office-ui-fabric-react/lib/TextField';
-import { Checkbox } from 'office-ui-fabric-react/lib/Checkbox';
+import { Label } from 'office-ui-fabric-react/lib/Label';
 
+import IListService from '../services/IListService'
+import ListService from '../services/ListService';
 
 
 export default class ISecondWebPart extends React.Component<IListSearchProps, IListSearchState> {
+    private listService: IListService;
 
     constructor(props: IListSearchProps, state: IListSearchState) {
         super(props);
+        this.listService = new ListService(this.context);
         this.state = {
-            isLoading: false,
+            items: null,
+            isLoading: true,
             errorMsg: "",
         };
 
+    }
 
+    public componentDidMount() {
+        this.readItems();
+    }
+
+    private async readItems() {
+        let listItemsPromise: Promise<Array<any>>;
+        let items: Array<any>;
+        let viewFields: Array<string> = new Array<string>();
+        viewFields.push("Title");
+        viewFields.push("ID");
+        try {
+            items = await this.listService.getListItems(this.props.ListName, viewFields, "ID", true);
+            this.setState({
+                items,
+                isLoading: false,
+            });
+        } catch (error) {
+            this.setState({
+                errorMsg: "readItemsError",
+                isLoading: false,
+            });
+        }
     }
 
     public render(): React.ReactElement<IListSearchProps> {
@@ -31,9 +58,7 @@ export default class ISecondWebPart extends React.Component<IListSearchProps, IL
                 <div className={styles.container}>
                     <div className={styles.row}>
                         {this.state.isLoading ? (<Spinner label="Cargando..." size={SpinnerSize.large} />) :
-                            (<div><Checkbox label="Simple" />
-                                <TextField color="white" label="Propiedad" id="Property" value={this.props.description} />
-                            </div>)}
+                            <p>The list {this.props.ListName} has {this.state.items ? this.state.items.length : 0}</p>}
                     </div>
                 </div>
             </div>);
