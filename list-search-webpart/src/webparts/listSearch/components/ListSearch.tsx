@@ -14,18 +14,16 @@ import {
   DetailsList,
   IColumn
 } from 'office-ui-fabric-react/lib/DetailsList';
+import { IListSearchListQuery } from '../model/ListSearchQuery';
 
 
 
 
 export default class ISecondWebPart extends React.Component<IListSearchProps, IListSearchState> {
-  private listService: IListService;
-  columnsNames: string[] = [];
   columns: IColumn[] = [];
 
   constructor(props: IListSearchProps, state: IListSearchState) {
     super(props);
-    this.listService = new ListService(this.props.Context);
     this.state = {
       items: null,
       isLoading: true,
@@ -34,45 +32,54 @@ export default class ISecondWebPart extends React.Component<IListSearchProps, IL
 
   }
 
-  //TODO revisar este metodo esta deprecado
-  public componentWillReceiveProps(nextProps: IListSearchProps) {
-    if (nextProps.ListName != this.props.ListName) {
-      this.readItems();
-    }
-  }
-
   public componentDidMount() {
     this.readItems();
   }
 
-  private addColumnIfNotExists(columnName: string, columnDisplayName): void {
-    if (this.columnsNames.indexOf(columnName) < 0) {
-      this.columns.push({ key: columnName, name: columnDisplayName, fieldName: columnName, minWidth: 100, maxWidth: 200, isResizable: true });
+  private addColumnIfNotExists(columnDisplayName): void {
+    if (this.columns.filter(column => column.key == columnDisplayName).length == 0) {
+      this.columns.push({ key: columnDisplayName, name: columnDisplayName, fieldName: columnDisplayName, minWidth: 100, maxWidth: 200, isResizable: true });
     }
   }
 
   private async readItems() {
-    //let keymap: { listName: string, viewFields: Array<string> };
+    //
+    //let keymapQuerys = {};
+
     let keymapQuerys = {};
     this.props.collectionData.map(item => {
-      if (keymapQuerys[item.ListSoruceField] != undefined) {
-        keymapQuerys[item.ListSoruceField].push(item.SoruceField);
-        this.addColumnIfNotExists(item.SoruceField, item.TargetField);
-      }
-      else {
-        keymapQuerys[item.ListSoruceField] = [item.SoruceField];
-        this.addColumnIfNotExists(item.SoruceField, item.TargetField);
-        if(this.props.ShowListName)
-        {
-          this.addColumnIfNotExists("CustomListFieldName", this.props.ListNameTitle);
+      if (keymapQuerys[item.SiteCollectionSource] != undefined) {
+        if (keymapQuerys[item.SiteCollectionSource][item.ListSoruceField] != undefined) {
+          keymapQuerys[item.SiteCollectionSource][item.ListSoruceField].viewFields.push({originalField: item.SoruceField, newField: item.TargetField});
+        }
+        else {
+          let newQueryListItem: IListSearchListQuery = {list: item.ListSoruceField, fields:[{originalField: item.SoruceField, newField: item.TargetField}]};
+          keymapQuerys[item.SiteCollectionSource][item.ListSoruceField] = newQueryListItem;
         }
       }
+      else {
+        let newQueryListItem: IListSearchListQuery = {list: item.ListSoruceField, fields:[{originalField: item.SoruceField, newField: item.TargetField}]};
+        keymapQuerys[item.SiteCollectionSource] = {};
+        keymapQuerys[item.SiteCollectionSource][item.ListSoruceField] = newQueryListItem;
+      }
+      this.addColumnIfNotExists(item.TargetField);
     });
+
+    if (this.props.ShowListName) {
+      this.addColumnIfNotExists(this.props.ListNameTitle);
+    }
+
+    if (this.props.ShowSite) {
+      this.addColumnIfNotExists(this.props.SiteNameTitle);
+    }
 
     let itemPromise: Array<Promise<Array<any>>> = [];
     try {
-      Object.keys(keymapQuerys).map(listQuery => {
-        itemPromise.push(this.listService.getListItems(listQuery, keymapQuerys[listQuery], "ID", true));
+      Object.keys(keymapQuerys).map(site => {
+        let listService: ListService = new ListService(site);
+        Object.keys(keymapQuerys[site]).map(listQuery => {
+          itemPromise.push(listService.getListItems(keymapQuerys[site][listQuery], this.props.ListNameTitle, this.props.SiteNameTitle));
+        })
       })
 
       let items = await Promise.all(itemPromise);
@@ -81,8 +88,6 @@ export default class ISecondWebPart extends React.Component<IListSearchProps, IL
         result.push(...partialResult);
       });
 
-      console.log(result);
-      console.log(this.columns);
       this.setState({
         items: result,
         isLoading: false,

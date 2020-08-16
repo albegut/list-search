@@ -12,12 +12,17 @@ import { IListSearchProps } from './components/IListSearchProps';
 import ListSearch from './components/ListSearch';
 import * as strings from 'ListSearchWebPartStrings';
 import { IListConfigProps } from './model/IListConfigProps';
+import { PropertyFieldSitePicker, IPropertyFieldSite } from '@pnp/spfx-property-controls/lib/PropertyFieldSitePicker';
+
 
 export interface IListSearchWebPartProps {
   ListName: string;
   collectionData: Array<IListConfigProps>;
-  ShowListName : boolean;
+  ShowListName: boolean;
+  ShowSite: boolean;
+  SiteNameTitle: string;
   ListNameTitle: string;
+  sites: IPropertyFieldSite[];
 }
 
 export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearchWebPartProps> {
@@ -26,10 +31,11 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
     const element: React.ReactElement<IListSearchProps> = React.createElement(
       ListSearch,
       {
-        ListName: this.properties.ListName,
         collectionData: this.properties.collectionData,
-        ShowListName : this.properties.ShowListName,
+        ShowListName: this.properties.ShowListName,
         ListNameTitle: this.properties.ListNameTitle,
+        ShowSite: this.properties.ShowSite,
+        SiteNameTitle: this.properties.SiteNameTitle,
         Context: this.context
       }
     );
@@ -40,55 +46,111 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
     return Version.parse('1.0');
   }
 
-  protected getPropertyPaneConfiguration(): IPropertyPaneConfiguration {
-    return {
-      pages: [
+  onPropertyPaneFieldChanged(propertyPath: string, oldValue: any, newValue: any) {
+    super.onPropertyPaneFieldChanged(propertyPath, oldValue, newValue);
+    switch (propertyPath) {
+      case "ShowListName":
         {
-          header: {
-            description: strings.PropertyPaneDescription
-          },
-          groups: [
-            {
-              groupName: strings.BasicGroupName,
-              groupFields: [
-                PropertyFieldCollectionData("collectionData", {
-                  key: "collectionData",
-                  label: "Collection data",
-                  panelHeader: "Collection data panel header",
-                  manageBtnLabel: "Manage collection data",
-                  value: this.properties.collectionData,
-                  fields: [
-                    {
-                      id: "ListSoruceField",
-                      title: "List",
-                      type: CustomCollectionFieldType.string,
-                      required: true
-                    },
-                    {
-                      id: "SoruceField",
-                      title: "Source field",
-                      type: CustomCollectionFieldType.string,
-                      required: true
-                    },
-                    {
-                      id: "TargetField",
-                      title: "Target field",
-                      type: CustomCollectionFieldType.string,
-                      required: true
-                    }
-                  ]
-                }),
-                PropertyPaneToggle('ShowListName', {
-                  label: strings.ListFieldLabel
-                }),
-                PropertyPaneTextField('ListNameTitle', {
-                  label: strings.ListFieldLabel
-                })
-              ]
-            }
-          ]
+          if (!newValue) {
+            this.properties.ListNameTitle = '';
+          }
+          break;
         }
-      ]
-    };
+      case "ShowSite":
+        {
+          if (!newValue) {
+            this.properties.SiteNameTitle = '';
+          }
+          break;
+        }
+    }
+  }
+
+  protected getPropertyPaneConfiguration(): IPropertyPaneConfiguration {
+    try {
+      console.log(this.properties.sites);
+      return {
+        pages: [
+          {
+            header: {
+              description: strings.PropertyPaneDescription
+            },
+            groups: [
+              {
+                groupName: strings.BasicGroupName,
+                groupFields: [
+                  PropertyFieldSitePicker('sites', {
+                    label: 'Select sites',
+                    initialSites: this.properties.sites || [],
+                    context: this.context,
+                    multiSelect: true,
+                    onPropertyChange: this.onPropertyPaneFieldChanged,
+                    properties: this.properties,
+                    key: 'sitesFieldId',
+                  }),
+                  PropertyFieldCollectionData("collectionData", {
+                    key: "collectionData",
+                    label: "Collection data",
+                    panelHeader: "Collection data panel header",
+                    manageBtnLabel: "Manage collection data",
+                    value: this.properties.collectionData,
+                    fields: [
+                      {
+                        id: "SiteCollectionSource",
+                        title: "Site Collection",
+                        type: CustomCollectionFieldType.dropdown,
+                        options: this.properties.sites.map(site => {
+                          return {
+                            key: site.url,
+                            text: site.url
+                          }
+                        }),
+                        required: true
+                      },
+                      {
+                        id: "ListSoruceField",
+                        title: "List",
+                        type: CustomCollectionFieldType.string,
+                        required: true
+                      },
+                      {
+                        id: "SoruceField",
+                        title: "Source field",
+                        type: CustomCollectionFieldType.string,
+                        required: true
+                      },
+                      {
+                        id: "TargetField",
+                        title: "Target field",
+                        type: CustomCollectionFieldType.string,
+                        required: true
+                      }
+                    ],
+                    disabled: !this.properties.sites || this.properties.sites.length == 0,
+                  }),
+                  PropertyPaneToggle('ShowListName', {
+                    label: strings.ListFieldLabel
+                  }),
+                  PropertyPaneTextField('ListNameTitle', {
+                    label: strings.ListFieldLabel,
+                    disabled: !this.properties.ShowListName
+                  }),
+                  PropertyPaneToggle('ShowSite', {
+                    label: "Show site information"
+                  }),
+                  PropertyPaneTextField('SiteNameTitle', {
+                    label: "Site column title",
+                    disabled: !this.properties.ShowSite
+                  })
+                ]
+              }
+            ]
+          }
+        ]
+      };
+    }
+    catch (error) {
+      console.log(error);
+    }
   }
 }

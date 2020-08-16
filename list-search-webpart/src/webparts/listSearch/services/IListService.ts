@@ -1,4 +1,5 @@
+import { IListSearchListQuery } from "../model/ListSearchQuery";
 
 export default interface IListService {
-    getListItems(listName:string, fields: Array<string>, orderBy:string, asc: boolean): Promise<Array<any>>
+  getListItems(listQueryOptions: IListSearchListQuery, listPropertyName: string, sitePropertyName: string): Promise<Array<any>>
 }
