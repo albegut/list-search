@@ -13,7 +13,8 @@ import ListSearch from './components/ListSearch';
 import * as strings from 'ListSearchWebPartStrings';
 import { IListConfigProps } from './model/IListConfigProps';
 import { PropertyFieldSitePicker, IPropertyFieldSite } from '@pnp/spfx-property-controls/lib/PropertyFieldSitePicker';
-
+import { Placeholder } from "@pnp/spfx-controls-react/lib/Placeholder";
+import { DisplayMode } from '@microsoft/sp-core-library';
 
 export interface IListSearchWebPartProps {
   ListName: string;
@@ -28,22 +29,52 @@ export interface IListSearchWebPartProps {
 export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearchWebPartProps> {
 
   public render(): void {
-    const element: React.ReactElement<IListSearchProps> = React.createElement(
-      ListSearch,
-      {
-        collectionData: this.properties.collectionData,
-        ShowListName: this.properties.ShowListName,
-        ListNameTitle: this.properties.ListNameTitle,
-        ShowSite: this.properties.ShowSite,
-        SiteNameTitle: this.properties.SiteNameTitle,
-        Context: this.context
-      }
-    );
-    ReactDom.render(element, this.domElement);
+    let renderElement = null;
+
+    let isEditMode: boolean = this.displayMode === DisplayMode.Edit;
+    if (!this.isConfig()) {
+      const placeholder: React.ReactElement<any> = React.createElement(
+        Placeholder,
+        {
+          iconName: 'Edit',
+          iconText: 'Configure List Search webpart properties',
+          description: 'You need to complete the configuration of the webpart',
+          buttonLabel: 'Configure',
+          onConfigure: () => this.context.propertyPane.open(),
+          hideButton: !isEditMode,
+        }
+      );
+      renderElement = placeholder;
+    }
+    else {
+      const element: React.ReactElement<IListSearchProps> = React.createElement(
+        ListSearch,
+        {
+          collectionData: this.properties.collectionData,
+          ShowListName: this.properties.ShowListName,
+          ListNameTitle: this.properties.ListNameTitle,
+          ShowSite: this.properties.ShowSite,
+          SiteNameTitle: this.properties.SiteNameTitle,
+          Context: this.context
+        }
+      );
+      renderElement = element;
+    }
+
+
+    ReactDom.render(renderElement, this.domElement);
+  }
+
+  private isConfig():boolean{
+    return this.properties.sites && this.properties.collectionData && this.properties.collectionData.length > 0;
   }
 
   protected get dataVersion(): Version {
     return Version.parse('1.0');
+  }
+
+  protected get disableReactivePropertyChanges(): boolean {
+    return true;
   }
 
   onPropertyPaneFieldChanged(propertyPath: string, oldValue: any, newValue: any) {
@@ -64,11 +95,13 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
           break;
         }
     }
+
+    this.render();
   }
+
 
   protected getPropertyPaneConfiguration(): IPropertyPaneConfiguration {
     try {
-      console.log(this.properties.sites);
       return {
         pages: [
           {
@@ -99,7 +132,7 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
                         id: "SiteCollectionSource",
                         title: "Site Collection",
                         type: CustomCollectionFieldType.dropdown,
-                        options: this.properties.sites.map(site => {
+                        options: this.properties.sites && this.properties.sites.map(site => {
                           return {
                             key: site.url,
                             text: site.url

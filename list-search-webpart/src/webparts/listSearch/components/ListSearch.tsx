@@ -15,6 +15,10 @@ import {
   IColumn
 } from 'office-ui-fabric-react/lib/DetailsList';
 import { IListSearchListQuery } from '../model/ListSearchQuery';
+import {
+  MessageBar,
+  MessageBarType
+} from 'office-ui-fabric-react';
 
 
 
@@ -50,15 +54,15 @@ export default class ISecondWebPart extends React.Component<IListSearchProps, IL
     this.props.collectionData.map(item => {
       if (keymapQuerys[item.SiteCollectionSource] != undefined) {
         if (keymapQuerys[item.SiteCollectionSource][item.ListSoruceField] != undefined) {
-          keymapQuerys[item.SiteCollectionSource][item.ListSoruceField].viewFields.push({originalField: item.SoruceField, newField: item.TargetField});
+          keymapQuerys[item.SiteCollectionSource][item.ListSoruceField].viewFields.push({ originalField: item.SoruceField, newField: item.TargetField });
         }
         else {
-          let newQueryListItem: IListSearchListQuery = {list: item.ListSoruceField, fields:[{originalField: item.SoruceField, newField: item.TargetField}]};
+          let newQueryListItem: IListSearchListQuery = { list: item.ListSoruceField, fields: [{ originalField: item.SoruceField, newField: item.TargetField }] };
           keymapQuerys[item.SiteCollectionSource][item.ListSoruceField] = newQueryListItem;
         }
       }
       else {
-        let newQueryListItem: IListSearchListQuery = {list: item.ListSoruceField, fields:[{originalField: item.SoruceField, newField: item.TargetField}]};
+        let newQueryListItem: IListSearchListQuery = { list: item.ListSoruceField, fields: [{ originalField: item.SoruceField, newField: item.TargetField }] };
         keymapQuerys[item.SiteCollectionSource] = {};
         keymapQuerys[item.SiteCollectionSource][item.ListSoruceField] = newQueryListItem;
       }
@@ -84,6 +88,7 @@ export default class ISecondWebPart extends React.Component<IListSearchProps, IL
 
       let items = await Promise.all(itemPromise);
       let result = [];
+      console.log("Items " + items);
       items.map(partialResult => {
         result.push(...partialResult);
       });
@@ -93,6 +98,7 @@ export default class ISecondWebPart extends React.Component<IListSearchProps, IL
         isLoading: false,
       });
     } catch (error) {
+      console.log("Error readItems")
       this.setState({
         errorMsg: "readItemsError",
         isLoading: false,
@@ -106,10 +112,18 @@ export default class ISecondWebPart extends React.Component<IListSearchProps, IL
       <div className={styles.listSearch}>
         <div className={styles.container}>
           <div className={styles.row}>
-            {this.state.isLoading ? <Spinner label="Cargando..." size={SpinnerSize.large} /> :
-              <React.Fragment><p>The data bellow has {this.state.items ? this.state.items.length : 0} items</p>
-                <DetailsList items={this.state.items} columns={this.columns} />
-              </React.Fragment>}
+            {this.state.isLoading ?
+              <Spinner label="Cargando..." size={SpinnerSize.large} /> :
+              this.state.errorMsg ?
+                <MessageBar
+                  messageBarType={MessageBarType.error}
+                  isMultiline={false}
+                  dismissButtonAriaLabel="Close"
+                >{this.state.errorMsg}
+                </MessageBar> :
+                <React.Fragment><p>The data bellow has {this.state.items ? this.state.items.length : 0} items</p>
+                  <DetailsList items={this.state.items || []} columns={this.columns} />
+                </React.Fragment>}
           </div>
         </div>
       </div>);
