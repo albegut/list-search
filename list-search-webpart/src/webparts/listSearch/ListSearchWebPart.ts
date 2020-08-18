@@ -4,7 +4,8 @@ import { Version } from '@microsoft/sp-core-library';
 import {
   IPropertyPaneConfiguration,
   PropertyPaneTextField,
-  PropertyPaneToggle
+  PropertyPaneToggle,
+  PropertyPaneLabel
 } from '@microsoft/sp-property-pane';
 import { BaseClientSideWebPart } from '@microsoft/sp-webpart-base';
 import { PropertyFieldCollectionData, CustomCollectionFieldType } from '@pnp/spfx-property-controls/lib/PropertyFieldCollectionData';
@@ -12,7 +13,8 @@ import { IListSearchProps } from './components/IListSearchProps';
 import ListSearch from './components/ListSearch';
 import * as strings from 'ListSearchWebPartStrings';
 import { IListConfigProps } from './model/IListConfigProps';
-import { PropertyFieldSitePicker, IPropertyFieldSite } from '@pnp/spfx-property-controls/lib/PropertyFieldSitePicker';
+import { PropertyFieldSitePicker, IPropertyFieldSite, } from '@pnp/spfx-property-controls/lib/PropertyFieldSitePicker';
+import { PropertyFieldNumber } from '@pnp/spfx-property-controls/lib/PropertyFieldNumber';
 import { Placeholder } from "@pnp/spfx-controls-react/lib/Placeholder";
 import { DisplayMode } from '@microsoft/sp-core-library';
 
@@ -20,9 +22,11 @@ export interface IListSearchWebPartProps {
   ListName: string;
   collectionData: Array<IListConfigProps>;
   ShowListName: boolean;
-  ShowSite: boolean;
-  SiteNameTitle: string;
   ListNameTitle: string;
+  ListNameOrder: number;
+  ShowSiteTitle: boolean;
+  SiteNameTitle: string;
+  SiteNameOrder: number;
   sites: IPropertyFieldSite[];
 }
 
@@ -53,8 +57,10 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
           collectionData: this.properties.collectionData,
           ShowListName: this.properties.ShowListName,
           ListNameTitle: this.properties.ListNameTitle,
-          ShowSite: this.properties.ShowSite,
+          ListNameOrder: this.properties.ListNameOrder,
+          ShowSite: this.properties.ShowSiteTitle,
           SiteNameTitle: this.properties.SiteNameTitle,
+          SiteNameOrder: this.properties.SiteNameOrder,
           Context: this.context
         }
       );
@@ -65,7 +71,7 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
     ReactDom.render(renderElement, this.domElement);
   }
 
-  private isConfig():boolean{
+  private isConfig(): boolean {
     return this.properties.sites && this.properties.collectionData && this.properties.collectionData.length > 0;
   }
 
@@ -95,13 +101,43 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
           break;
         }
     }
-
-    this.render();
   }
 
 
   protected getPropertyPaneConfiguration(): IPropertyPaneConfiguration {
     try {
+      let numSites: number = 0;
+      let emptyProperty = PropertyPaneLabel('emptyLabel', {
+        text: ""
+      });
+
+      let ListNameTitlePropertyPane = this.properties.ShowListName ? PropertyPaneTextField('ListNameTitle', {
+        label: strings.ListFieldLabel,
+        disabled: !this.properties.ShowListName
+      }) : emptyProperty;
+
+      let ListNameOrderPropertyPane = this.properties.ShowListName ? PropertyFieldNumber("ListNameOrder", {
+        key: "ListNameOrder",
+        label: "List column order",
+        minValue: 0,
+        description: "Order of List Name column",
+        value: this.properties.ListNameOrder || null,
+        disabled: !this.properties.ShowListName
+      }) : emptyProperty;
+
+      let SiteNameTitlePropertyPane = this.properties.ShowSiteTitle ? PropertyPaneTextField('SiteNameTitle', {
+        label: "Site column title",
+        disabled: !this.properties.ShowSiteTitle
+      }) : emptyProperty;
+
+      let SiteNameOrderPropertyPane = this.properties.ShowSiteTitle ? PropertyFieldNumber("SiteNameOrder", {
+        key: "SiteNameOrder",
+        label: "Site column Order",
+        description: "Order of site title column",
+        value: this.properties.SiteNameOrder || null,
+        disabled: !this.properties.ShowSiteTitle
+      }) : emptyProperty;
+
       return {
         pages: [
           {
@@ -157,24 +193,33 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
                         title: "Target field",
                         type: CustomCollectionFieldType.string,
                         required: true
+                      },
+                      {
+                        id: "Order",
+                        title: "Order",
+                        type: CustomCollectionFieldType.number,
+                        required: true
                       }
                     ],
                     disabled: !this.properties.sites || this.properties.sites.length == 0,
                   }),
                   PropertyPaneToggle('ShowListName', {
-                    label: strings.ListFieldLabel
-                  }),
-                  PropertyPaneTextField('ListNameTitle', {
                     label: strings.ListFieldLabel,
-                    disabled: !this.properties.ShowListName
+                    disabled: !this.properties.sites || this.properties.sites.length == 0,
+                    checked: !!this.properties.sites && this.properties.sites.length > 0 && this.properties.ShowListName
                   }),
-                  PropertyPaneToggle('ShowSite', {
-                    label: "Show site information"
+                  ListNameTitlePropertyPane
+                  ,
+                  ListNameOrderPropertyPane
+                  ,
+                  PropertyPaneToggle('ShowSiteTitle', {
+                    label: "Show site information",
+                    disabled: !this.properties.sites || this.properties.sites.length == 0,
+                    checked: !!this.properties.sites && this.properties.sites.length > 0 && this.properties.ShowSiteTitle
                   }),
-                  PropertyPaneTextField('SiteNameTitle', {
-                    label: "Site column title",
-                    disabled: !this.properties.ShowSite
-                  })
+                  SiteNameTitlePropertyPane
+                  ,
+                  SiteNameOrderPropertyPane
                 ]
               }
             ]
@@ -183,7 +228,7 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
       };
     }
     catch (error) {
-      console.log(error);
+      console.error(error);
     }
   }
 }
