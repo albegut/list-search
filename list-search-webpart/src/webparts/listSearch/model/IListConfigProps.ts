@@ -1,7 +1,15 @@
-export interface IListConfigProps{
+export interface IListFieldData{
   SiteCollectionSource: string;
-  ListSoruceField: string;
-  SoruceField: string;
+  ListSourceField: string;
+  SourceField: string;
   TargetField: string;
   Order: number;
+  Searcheable: boolean;
+}
+
+export interface IListData{
+  SiteCollectionSource: string;
+  ListSourceField: string;
+  ListView: string;
+  Query: string;
 }

@@ -3,4 +3,5 @@ export interface IListSearchState{
     errorMsg : string;
     items: Array<any>;
     filterItems: Array<any>;
+    activePage: number;
 }

@@ -21,7 +21,7 @@
     "@pnp/sp": "2.0.8",
     "@pnp/spfx-controls-react": "1.19.0",
     "@pnp/spfx-property-controls": "1.19.0",
-    "fast-serve": "^1.0.3"
+    "react-js-pagination": "3.0.3"
   },
   "devDependencies": {
     "@microsoft/sp-build-web": "1.11.0",
