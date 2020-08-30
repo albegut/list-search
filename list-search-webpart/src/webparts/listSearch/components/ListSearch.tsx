@@ -2,7 +2,7 @@ import * as React from 'react';
 import styles from '../ListSearchWebPart.module.scss';
 import * as strings from 'ListSearchWebPartStrings';
 import ListService from '../services/ListService';
-import { IListSearchState } from './IListSearchState';
+import { IListSearchState, IColumnFilter } from './IListSearchState';
 import { IListSearchProps } from './IListSearchProps';
 import { Spinner, SpinnerSize } from 'office-ui-fabric-react/lib/Spinner';
 import {
@@ -21,11 +21,15 @@ import {
   MessageBar,
   MessageBarType
 } from 'office-ui-fabric-react';
-import { SearchBox, ISearchBoxStyles } from 'office-ui-fabric-react/lib/SearchBox';
+import { SearchBox } from 'office-ui-fabric-react/lib/SearchBox';
 import Pagination from "react-js-pagination";
 import { IReadonlyTheme } from '@microsoft/sp-component-base';
+import { IIconProps } from 'office-ui-fabric-react/lib/Icon';
 
 
+
+
+const filterIcon: IIconProps = { iconName: 'Filter' };
 
 export default class ISecondWebPart extends React.Component<IListSearchProps, IListSearchState> {
   columns: IColumn[] = [];
@@ -38,6 +42,8 @@ export default class ISecondWebPart extends React.Component<IListSearchProps, IL
       filterItems: null,
       isLoading: true,
       errorMsg: "",
+      columnFilters: [],
+      generalFilter: ""
     };
 
   }
@@ -128,16 +134,55 @@ export default class ISecondWebPart extends React.Component<IListSearchProps, IL
   }
 
   public filterColumnListItems(propertyName: string, propertyValue: string) {
-    let filterItems: Array<any> = this.state.items.filter(item => {
-      return item[propertyName] && item[propertyName].toString().toLowerCase().indexOf(propertyValue.toLowerCase()) > -1
+
+    let columnFiltersToApply = this.state.columnFilters.length > 0 ? this.state.columnFilters : [{ columnName: propertyName, filterToApply: propertyValue }];
+    let isNewFilter: boolean = true;
+    let clearFilter: boolean = false;
+    let newFitlers: IColumnFilter[] = columnFiltersToApply.filter(filter => {
+      if (filter.columnName === propertyName) {
+        filter.filterToApply = propertyValue;
+        isNewFilter = false;
+      }
+      if (filter.filterToApply && filter.filterToApply.length > 0) { //Remove empty filters
+        return filter;
+      }
+      else {
+        clearFilter = true;
+      }
     });
-    this.setState({ filterItems });
+
+    if (isNewFilter) newFitlers.push({ columnName: propertyName, filterToApply: propertyValue })
+
+    let itemsToRefine = clearFilter || this.state.generalFilter ? this.filterListItemsByGeneralFilter(this.state.generalFilter, true, false) : this.state.filterItems;
+
+    this.filterListItemsByColumnsFilter(itemsToRefine, newFitlers, false);
   }
 
-  public filterListItems(valueToFilter: string) {
+  public filterListItemsByColumnsFilter(itemsToRefine: any[], newFilters: IColumnFilter[], isFromClearGeneralFilter: boolean) {
+    if (this.props.IndividualColumnFilter) {
+      let newItems: Array<any> = [];
+      itemsToRefine.filter(item => {
+        let itemFounded: boolean = true;
+        newFilters.map(filter => {
+          if (item[filter.columnName] == undefined || item[filter.columnName] == "" || item[filter.columnName].toString().toLowerCase().indexOf(filter.filterToApply.toLowerCase()) < 0) {
+            itemFounded = false;
+          }
+        })
+        if (itemFounded) newItems.push(item);
+      })
+
+      this.setState({ filterItems: newItems, columnFilters: newFilters, generalFilter: isFromClearGeneralFilter ? "" : this.state.generalFilter });
+    }
+    else {
+      this.setState({ generalFilter: isFromClearGeneralFilter ? "" : this.state.generalFilter });
+    }
+  }
+
+  public filterListItemsByGeneralFilter(valueToFilter: string, isClearFilter: boolean, reloadComponents: boolean) {
     if (valueToFilter && valueToFilter.length > 0) {
       let filterItems: Array<any> = []
-      this.state.items.filter(item => {
+      let itemsToFilter = isClearFilter ? this.state.items : this.state.filterItems;
+      itemsToFilter.filter(item => {
         this.props.GeneralSearcheableFields.map(field => {
           if (filterItems.indexOf(item) < 0) {
             if (item[field.TargetField] && item[field.TargetField].toString().toLowerCase().indexOf(valueToFilter.toLowerCase()) > -1) {
@@ -148,15 +193,25 @@ export default class ISecondWebPart extends React.Component<IListSearchProps, IL
         })
 
       });
-      this.setState({ filterItems });
+      if (reloadComponents) {
+        this.setState({ filterItems, generalFilter: valueToFilter });
+      }
+      else {
+        return filterItems;
+      }
     }
     else {
-      this.clearGeneralFilter();
+      if (reloadComponents) {
+        this.clearGeneralFilter();
+      }
+      else {
+        return this.state.items;
+      }
     }
   }
 
   public clearGeneralFilter() {
-    this.setState({ filterItems: this.state.items });
+    this.filterListItemsByColumnsFilter(this.state.items, this.state.columnFilters, true);
   }
 
 
@@ -165,7 +220,8 @@ export default class ISecondWebPart extends React.Component<IListSearchProps, IL
       let _renderDetailsFooterItemColumn: IDetailsRowBaseProps['onRenderItemColumn'] = (item, index, column) => {
         if (column) {
           return (
-            <TextField onChange={(ev, value) => this.filterColumnListItems(column.name, value)} />
+            <SearchBox placeholder={column.name} iconProps={filterIcon}
+              underlined={true} onChange={(ev, value) => this.filterColumnListItems(column.name, value)} onClear={(ev) => this.filterColumnListItems(column.name, "")} />
           );
         }
         return undefined;
@@ -194,35 +250,35 @@ export default class ISecondWebPart extends React.Component<IListSearchProps, IL
     const { semanticColors }: IReadonlyTheme = this.props.themeVariant;
 
     return (
-      <div className={styles.listSearch} style={{ backgroundColor: semanticColors.bodyBackground }}>
-        <div className={styles.container}>
-          <div className={styles.row}>
-            {this.state.isLoading ?
-              <Spinner label="Cargando..." size={SpinnerSize.large} style={{ backgroundColor: semanticColors.bodyBackground }} /> :
-              this.state.errorMsg ?
-                <MessageBar
-                  messageBarType={MessageBarType.error}
-                  isMultiline={false}
-                  dismissButtonAriaLabel="Close"
-                >{this.state.errorMsg}
-                </MessageBar> :
-                <React.Fragment>
-                  {this.props.GeneralFilter && <SearchBox placeholder={this.props.GeneralFilterPlaceHolderText} onClear={() => this.clearGeneralFilter()} onChange={(ev, newValue) => this.filterListItems(newValue)} />}
-                  <div >{this.props.ShowItemCount && this.props.ItemCountText.replace("{itemCount}", this.state.filterItems.length.toString())}</div>
-                  <DetailsList items={this.state.filterItems || []} columns={this.columns.sort((prev, next) => prev.data - next.data)}
-                    onRenderDetailsFooter={(detailsFooterProps) => this._onRenderDetailsFooter(detailsFooterProps)} />
-                  {this.props.ShowPagination &&
-                    <Pagination
-                      activePage={this.state.activePage}
-                      itemsCountPerPage={this.props.ItemsInPage}
-                      totalItemsCount={this.state.items ? this.state.items.length : 0}
-                      pageRangeDisplayed={5}
-                      onChange={this.handlePageChange.bind(this)}
-                    />
-                  }
-                </React.Fragment>}
-          </div>
+      <div className={styles.listSearch} style={{
+        backgroundColor: semanticColors.bodyBackground
+      }}>
+        <div className={styles.row}>
+          {this.state.isLoading ?
+            <Spinner label="Cargando..." size={SpinnerSize.large} style={{ backgroundColor: semanticColors.bodyBackground }} /> :
+            this.state.errorMsg ?
+              <MessageBar
+                messageBarType={MessageBarType.error}
+                isMultiline={false}
+                dismissButtonAriaLabel="Close"
+              >{this.state.errorMsg}
+              </MessageBar> :
+              <React.Fragment>
+                {this.props.GeneralFilter && <SearchBox placeholder={this.props.GeneralFilterPlaceHolderText} onClear={() => this.clearGeneralFilter()} onChange={(ev, newValue) => this.filterListItemsByGeneralFilter(newValue, false, true)} />}
+                <div>{this.props.ShowItemCount && this.props.ItemCountText.replace("{itemCount}", this.state.filterItems.length.toString())}</div>
+                <DetailsList items={this.state.filterItems || []} columns={this.columns.sort((prev, next) => prev.data - next.data)}
+                  onRenderDetailsFooter={(detailsFooterProps) => this._onRenderDetailsFooter(detailsFooterProps)} />
+                {this.props.ShowPagination &&
+                  <Pagination
+                    activePage={this.state.activePage}
+                    itemsCountPerPage={this.props.ItemsInPage}
+                    totalItemsCount={this.state.items ? this.state.items.length : 0}
+                    pageRangeDisplayed={5}
+                    onChange={this.handlePageChange.bind(this)}
+                  />
+                }
+              </React.Fragment>}
         </div>
-      </div>);
+      </div >);
   }
 }
