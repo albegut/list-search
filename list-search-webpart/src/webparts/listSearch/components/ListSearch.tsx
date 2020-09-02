@@ -25,6 +25,7 @@ import { SearchBox } from 'office-ui-fabric-react/lib/SearchBox';
 import Pagination from "react-js-pagination";
 import { IReadonlyTheme } from '@microsoft/sp-component-base';
 import { IIconProps } from 'office-ui-fabric-react/lib/Icon';
+import { DefaultButton, PrimaryButton } from 'office-ui-fabric-react';
 
 
 
@@ -134,11 +135,9 @@ export default class ISecondWebPart extends React.Component<IListSearchProps, IL
   }
 
   public filterColumnListItems(propertyName: string, propertyValue: string) {
-
-    let columnFiltersToApply = this.state.columnFilters.length > 0 ? this.state.columnFilters : [{ columnName: propertyName, filterToApply: propertyValue }];
     let isNewFilter: boolean = true;
     let clearFilter: boolean = false;
-    let newFitlers: IColumnFilter[] = columnFiltersToApply.filter(filter => {
+    let newFitlers: IColumnFilter[] = this.state.columnFilters.filter(filter => {
       if (filter.columnName === propertyName) {
         filter.filterToApply = propertyValue;
         isNewFilter = false;
@@ -181,7 +180,7 @@ export default class ISecondWebPart extends React.Component<IListSearchProps, IL
   public filterListItemsByGeneralFilter(valueToFilter: string, isClearFilter: boolean, reloadComponents: boolean) {
     if (valueToFilter && valueToFilter.length > 0) {
       let filterItems: Array<any> = []
-      let itemsToFilter = isClearFilter ? this.state.items : this.state.filterItems;
+      let itemsToFilter = (isClearFilter || valueToFilter.length < this.state.generalFilter.length) ? this.state.items : this.state.filterItems;
       itemsToFilter.filter(item => {
         this.props.GeneralSearcheableFields.map(field => {
           if (filterItems.indexOf(item) < 0) {
@@ -219,8 +218,9 @@ export default class ISecondWebPart extends React.Component<IListSearchProps, IL
     if (this.props.IndividualColumnFilter) {
       let _renderDetailsFooterItemColumn: IDetailsRowBaseProps['onRenderItemColumn'] = (item, index, column) => {
         if (column) {
+          let filter = this.state.columnFilters.filter(colFilter => { if (colFilter.columnName == column.name) return colFilter });
           return (
-            <SearchBox placeholder={column.name} iconProps={filterIcon}
+            <SearchBox placeholder={column.name} iconProps={filterIcon} value={filter && filter.length > 0 ? filter[0].filterToApply : ""}
               underlined={true} onChange={(ev, value) => this.filterColumnListItems(column.name, value)} onClear={(ev) => this.filterColumnListItems(column.name, "")} />
           );
         }
@@ -244,40 +244,56 @@ export default class ISecondWebPart extends React.Component<IListSearchProps, IL
     this.setState({ activePage: pageNumber });
   }
 
+  _clearAllFilters() {
+    this.setState({ columnFilters: [], filterItems: this.state.items, generalFilter: "" });
+  }
+
 
   public render(): React.ReactElement<IListSearchProps> {
 
     const { semanticColors }: IReadonlyTheme = this.props.themeVariant;
 
+
+    let clearAllButton = this.props.ClearAllFiltersBtnColor == "white" ? <DefaultButton text={this.props.ClearAllFiltersBtnText} onClick={(ev) => this._clearAllFilters()} /> : <PrimaryButton text={this.props.ClearAllFiltersBtnText} onClick={(ev) => this._clearAllFilters()} />;
+
     return (
-      <div className={styles.listSearch} style={{
-        backgroundColor: semanticColors.bodyBackground
-      }}>
+      <div className={styles.listSearch} style={{ backgroundColor: semanticColors.bodyBackground }}>
         <div className={styles.row}>
-          {this.state.isLoading ?
-            <Spinner label="Cargando..." size={SpinnerSize.large} style={{ backgroundColor: semanticColors.bodyBackground }} /> :
-            this.state.errorMsg ?
-              <MessageBar
-                messageBarType={MessageBarType.error}
-                isMultiline={false}
-                dismissButtonAriaLabel="Close"
-              >{this.state.errorMsg}
-              </MessageBar> :
-              <React.Fragment>
-                {this.props.GeneralFilter && <SearchBox placeholder={this.props.GeneralFilterPlaceHolderText} onClear={() => this.clearGeneralFilter()} onChange={(ev, newValue) => this.filterListItemsByGeneralFilter(newValue, false, true)} />}
-                <div>{this.props.ShowItemCount && this.props.ItemCountText.replace("{itemCount}", this.state.filterItems.length.toString())}</div>
-                <DetailsList items={this.state.filterItems || []} columns={this.columns.sort((prev, next) => prev.data - next.data)}
-                  onRenderDetailsFooter={(detailsFooterProps) => this._onRenderDetailsFooter(detailsFooterProps)} />
-                {this.props.ShowPagination &&
-                  <Pagination
-                    activePage={this.state.activePage}
-                    itemsCountPerPage={this.props.ItemsInPage}
-                    totalItemsCount={this.state.items ? this.state.items.length : 0}
-                    pageRangeDisplayed={5}
-                    onChange={this.handlePageChange.bind(this)}
-                  />
-                }
-              </React.Fragment>}
+          <div className={styles.column}>
+            {this.state.isLoading ?
+              <Spinner label="Cargando..." size={SpinnerSize.large} style={{ backgroundColor: semanticColors.bodyBackground }} /> :
+              this.state.errorMsg ?
+                <MessageBar
+                  messageBarType={MessageBarType.error}
+                  isMultiline={false}
+                  dismissButtonAriaLabel="Close"
+                >{this.state.errorMsg}
+                </MessageBar> :
+                <React.Fragment>
+                  <div className={styles.rowTopInformation}>
+                    {this.props.GeneralFilter && <div className={styles.ColGeneralFilter}><SearchBox value={this.state.generalFilter} placeholder={this.props.GeneralFilterPlaceHolderText} onClear={() => this.clearGeneralFilter()} onChange={(ev, newValue) => this.filterListItemsByGeneralFilter(newValue, false, true)} /></div>}
+                    <div className={styles.ColItemCount}>
+                      {this.props.ShowItemCount && this.props.ItemCountText.replace("{itemCount}", this.state.filterItems.length.toString())}
+                    </div>
+                    <div className={styles.ColClearAll}>
+                      {this.props.ShowClearAllFilters && clearAllButton}
+                    </div>
+                  </div>
+                  <div className={styles.rowData}>
+                    <DetailsList items={this.state.filterItems || []} columns={this.columns.sort((prev, next) => prev.data - next.data)}
+                      onRenderDetailsFooter={(detailsFooterProps) => this._onRenderDetailsFooter(detailsFooterProps)} />
+                    {this.props.ShowPagination &&
+                      <Pagination
+                        activePage={this.state.activePage}
+                        itemsCountPerPage={this.props.ItemsInPage}
+                        totalItemsCount={this.state.items ? this.state.items.length : 0}
+                        pageRangeDisplayed={5}
+                        onChange={this.handlePageChange.bind(this)}
+                      />
+                    }
+                  </div>
+                </React.Fragment>}
+          </div>
         </div>
       </div >);
   }

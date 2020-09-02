@@ -20,6 +20,9 @@ export interface IListSearchProps {
   GeneralFilterPlaceHolderText: string;
   GeneralSearcheableFields: Array<IListFieldData>;
   IndividualColumnFilter: boolean;
+  ShowClearAllFilters: boolean;
+  ClearAllFiltersBtnColor: string;
+  ClearAllFiltersBtnText: string;
   Sites: IPropertyFieldSite[];
   ShowItemCount: boolean;
   ItemCountText: string;

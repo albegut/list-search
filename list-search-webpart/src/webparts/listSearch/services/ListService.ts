@@ -7,7 +7,6 @@ import "@pnp/sp/views";
 import IListService from "./IListService";
 import { IListSearchListQuery } from "../model/ListSearchQuery";
 import { ICamlQuery } from "@pnp/sp/lists";
-import { IView } from "@pnp/sp/views";
 
 export default class ListService implements IListService {
 
@@ -27,8 +26,8 @@ export default class ListService implements IListService {
       }
       else {
         if (listQueryOptions.viewName) {
-          let viewInfo: any = await sp.web.lists.getByTitle(listQueryOptions.list).views.getByTitle(listQueryOptions.viewName).get();
-          items = await this.getListItemsByCamlQuery(listQueryOptions.list, viewInfo.ViewQuery.toString())
+          let viewInfo: any = await sp.web.lists.getByTitle(listQueryOptions.list).views.getByTitle(listQueryOptions.viewName).select("ViewQuery").get();
+          items = await this.getListItemsByCamlQuery(listQueryOptions.list, '<View><Query>' + viewInfo.ViewQuery + '</Query></View>')
         }
         else {
           let viewFields: string[] = listQueryOptions.fields.map(field => { return field.originalField });

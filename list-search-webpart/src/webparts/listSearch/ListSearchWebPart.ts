@@ -29,7 +29,7 @@ import {
 export interface IListSearchWebPartProps {
   ListName: string;
   collectionData: Array<IListFieldData>;
-  ListscollectionData : Array<IListData>;
+  ListscollectionData: Array<IListData>;
   ShowListName: boolean;
   ListNameTitle: string;
   ListNameOrder: number;
@@ -42,6 +42,9 @@ export interface IListSearchWebPartProps {
   GeneralFilter: boolean;
   GeneralFilterPlaceHolderText: string;
   IndividualColumnFilter: boolean;
+  ShowClearAllFilters: boolean;
+  ClearAllFiltersBtnColor: string;
+  ClearAllFiltersBtnText: string;
   SiteNameSearcheable: boolean;
   ShowItemCount: boolean;
   ItemCountText: string;
@@ -109,7 +112,7 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
         {
           Sites: this.properties.sites,
           collectionData: this.properties.collectionData,
-          ListscollectionData : this.properties.ListscollectionData,
+          ListscollectionData: this.properties.ListscollectionData,
           ShowListName: this.properties.ShowListName,
           ListNameTitle: this.properties.ListNameTitle,
           ListNameOrder: this.properties.ListNameOrder,
@@ -121,6 +124,9 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
           Context: this.context,
           GeneralFilter: this.properties.GeneralFilter,
           GeneralFilterPlaceHolderText: this.properties.GeneralFilterPlaceHolderText,
+          ShowClearAllFilters: this.properties.ShowClearAllFilters,
+          ClearAllFiltersBtnColor: this.properties.ClearAllFiltersBtnColor,
+          ClearAllFiltersBtnText: this.properties.ClearAllFiltersBtnText,
           GeneralSearcheableFields: sercheableFields,
           IndividualColumnFilter: this.properties.IndividualColumnFilter,
           ShowItemCount: this.properties.ShowItemCount,
@@ -142,7 +148,7 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
 
   private isConfig(): boolean {
     return this.properties.sites && this.properties.collectionData && this.properties.collectionData.length > 0 &&
-           this.properties.ListscollectionData && this.properties.ListscollectionData.length > 0;
+      this.properties.ListscollectionData && this.properties.ListscollectionData.length > 0;
   }
 
   protected get dataVersion(): Version {
@@ -177,9 +183,9 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
   protected getPropertyPaneConfiguration(): IPropertyPaneConfiguration {
     try {
       let SiteTitleOptions: IPropertyPaneDropdownOption[] = []
-      SiteTitleOptions.push({key: "id", text:"Id"});
-      SiteTitleOptions.push({key: "title", text:"Title"});
-      SiteTitleOptions.push({key: "url", text:"Url"});
+      SiteTitleOptions.push({ key: "id", text: "Id" });
+      SiteTitleOptions.push({ key: "title", text: "Title" });
+      SiteTitleOptions.push({ key: "url", text: "Url" });
 
       let emptyProperty = new EmptyPropertyPane();
 
@@ -226,6 +232,18 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
 
       let GeneralFilterPlaceHolder = this.properties.GeneralFilter ? PropertyPaneTextField('GeneralFilterPlaceHolderText', {
         label: "General filter placeholder",
+      }) : emptyProperty;
+
+      let ClearAlFiltersBtnText = this.properties.ShowClearAllFilters ? PropertyPaneTextField('ClearAllFiltersBtnText', {
+        label: "Clear all filters text",
+      }) : emptyProperty;
+
+      let clearAllFiltersBtnColorOptions: IPropertyPaneDropdownOption[] = []
+      clearAllFiltersBtnColorOptions.push({ key: "white", text: "White" });
+      clearAllFiltersBtnColorOptions.push({ key: "theme", text: "Theme" });
+      let ClearAlFiltersBtnColor = this.properties.ShowClearAllFilters ? PropertyPaneDropdown('ClearAllFiltersBtnColor', {
+        label: "Clear all filters button color",
+        options: clearAllFiltersBtnColorOptions
       }) : emptyProperty;
 
       let ItemCountTextField = this.properties.ShowItemCount ? PropertyPaneTextField('ItemCountText', {
@@ -275,7 +293,7 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
                             text: site.url
                           }
                         }),
-                        required: true
+                        required: true,
                       },
                       {
                         id: "ListSourceField",
@@ -334,10 +352,10 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
                         id: "SiteCollectionSource",
                         title: "Site Collection",
                         type: CustomCollectionFieldType.dropdown,
-                        options: this.properties.sites && this.properties.sites.map(site => {
+                        options: this.properties.ListscollectionData && this.properties.ListscollectionData.map(site => {
                           return {
-                            key: site.url,
-                            text: site.url
+                            key: site.SiteCollectionSource,
+                            text: site.SiteCollectionSource
                           }
                         }),
                         required: true
@@ -345,7 +363,13 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
                       {
                         id: "ListSourceField",
                         title: "List",
-                        type: CustomCollectionFieldType.string,
+                        type: CustomCollectionFieldType.dropdown,
+                        options: this.properties.ListscollectionData && this.properties.ListscollectionData.map(site => {
+                          return {
+                            key: site.ListSourceField,
+                            text: site.ListSourceField
+                          }
+                        }),
                         required: true
                       },
                       {
@@ -420,7 +444,13 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
                   PropertyPaneToggle('IndividualColumnFilter', {
                     label: "Indovidual column filter",
                     checked: this.properties.IndividualColumnFilter
-                  })
+                  }),
+                  PropertyPaneToggle('ShowClearAllFilters', {
+                    label: "Show button clear all filters",
+                    checked: this.properties.ShowClearAllFilters
+                  }),
+                  ClearAlFiltersBtnColor,
+                  ClearAlFiltersBtnText
                 ]
               }
             ]
