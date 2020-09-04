@@ -9,8 +9,10 @@ import { IListSearchListQuery } from "../model/ListSearchQuery";
 import { ICamlQuery } from "@pnp/sp/lists";
 import { ICamlQueryXml } from '../model/ICamlQueryXml';
 import XMLParser from 'react-xml-parser';
+import { IWeb, Web } from '@pnp/sp/webs';
 
 export default class ListService implements IListService {
+  private web: IWeb;
 
   constructor(siteUrl: string) {
     sp.setup({
@@ -18,6 +20,7 @@ export default class ListService implements IListService {
         baseUrl: siteUrl
       },
     });
+    this.web = Web(siteUrl);
   }
 
   public async getListItems(listQueryOptions: IListSearchListQuery, listPropertyName: string, sitePropertyName: string, sitePropertyValue: string, rowLimit: number): Promise<Array<any>> {
@@ -30,17 +33,17 @@ export default class ListService implements IListService {
       }
       else {
         if (listQueryOptions.viewName) {
-          let viewInfo: any = await sp.web.lists.getByTitle(listQueryOptions.list).views.getByTitle(listQueryOptions.viewName).select("ViewQuery").get();
+          let viewInfo: any = await this.web.lists.getByTitle(listQueryOptions.list).views.getByTitle(listQueryOptions.viewName).select("ViewQuery").get();
           let query = this.getCamlQueryWithViewFieldsAndRowLimit(`<View><Query>${viewInfo.ViewQuery}</Query></View>`, viewFields, rowLimit);
           items = await this.getListItemsByCamlQuery(listQueryOptions.list, query);
         }
         else {
 
           if (rowLimit) {
-            items = await sp.web.lists.getByTitle(listQueryOptions.list).items.top(rowLimit).select(viewFields.join(',')).get();
+            items = await this.web.lists.getByTitle(listQueryOptions.list).items.top(rowLimit).select(viewFields.join(',')).get();
           }
           else {
-            items = await sp.web.lists.getByTitle(listQueryOptions.list).items.select(viewFields.join(',')).get();
+            items = await this.web.lists.getByTitle(listQueryOptions.list).items.select(viewFields.join(',')).get();
           }
         }
 
@@ -66,7 +69,7 @@ export default class ListService implements IListService {
 
   public async getSiteListsTitle(): Promise<Array<any>> {
     try {
-      return sp.web.lists.filter('Hidden eq false').select('Title').get();
+      return this.web.lists.filter('Hidden eq false').select('Title').get();
     } catch (error) {
       return Promise.reject(error);
     }
@@ -74,7 +77,7 @@ export default class ListService implements IListService {
 
   public async getListFieldsTitle(listTitle: string): Promise<Array<any>> {
     try {
-      return sp.web.lists.getByTitle(listTitle).fields.select('Title').get();
+      return this.web.lists.getByTitle(listTitle).fields.select('Title').get();
     } catch (error) {
       return Promise.reject(error);
     }
@@ -87,7 +90,7 @@ export default class ListService implements IListService {
       const caml: ICamlQuery = {
         ViewXml: camlQuery,
       };
-      return await sp.web.lists.getByTitle(listName).getItemsByCAMLQuery(caml);
+      return await this.web.lists.getByTitle(listName).getItemsByCAMLQuery(caml);
     } catch (error) {
       return Promise.reject(error);
     }

@@ -381,12 +381,13 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
             header: {
               description: strings.PropertyPaneDescription
             },
+            displayGroupsAsAccordion:true,
             groups: [
               {
-                groupName: strings.BasicGroupName,
+                groupName: strings.SourceSelectorGroup,
                 groupFields: [
                   PropertyFieldSitePicker('sites', {
-                    label: 'Select sites',
+                    label: strings.SitesSelector,
                     initialSites: this.properties.sites || [],
                     context: this.context,
                     multiSelect: true,
@@ -396,9 +397,9 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
                   }),
                   PropertyFieldCollectionData("listsCollectionData", {
                     key: "listsCollectionData",
-                    label: "Lists data",
-                    panelHeader: "Collection list data panel header",
-                    manageBtnLabel: "Manage lists data",
+                    label: strings.ListSelector,
+                    panelHeader: strings.ListSelectorPanelHeader,
+                    manageBtnLabel: strings.ListSelectorLabel,
                     value: this.properties.listsCollectionData,
                     fields: [
                       {
@@ -439,7 +440,13 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
                       }
                     ],
                     disabled: !this.properties.sites || this.properties.sites.length == 0,
-                  }),
+                  })
+                ]
+              },
+              {
+                groupName: strings.GeneralPropertiesGroup,
+                isCollapsed:true,
+                groupFields: [
                   PropertyPaneToggle('ShowItemCount', {
                     label: "Show item count",
                   }),
@@ -456,15 +463,18 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
                   ItemsInPagePropertyPane
                 ]
               }
+
             ]
           },
           {
             header: {
               description: "Field Properties"
             },
+            displayGroupsAsAccordion: true,
             groups: [
               {
                 groupName: "Field Properties",
+                isCollapsed: true,
                 groupFields: [
                   PropertyFieldCollectionData("fieldCollectionData", {
                     key: "fieldCollectionData",
@@ -530,6 +540,7 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
               },
               {
                 groupName: "Additional Properties",
+                isCollapsed: true,
                 groupFields: [
                   PropertyPaneToggle('ShowListName', {
                     label: strings.ListFieldLabel,
