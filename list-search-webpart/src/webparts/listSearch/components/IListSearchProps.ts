@@ -6,8 +6,8 @@ import { IReadonlyTheme } from '@microsoft/sp-component-base';
 
 export interface IListSearchProps {
   Context: WebPartContext;
-  collectionData: Array<IListFieldData>;
-  ListscollectionData : Array<IListData>;
+  fieldsCollectionData: Array<IListFieldData>;
+  listsCollectionData : Array<IListData>;
   ShowListName: boolean;
   ListNameTitle: string;
   ListNameOrder: number;
@@ -20,6 +20,7 @@ export interface IListSearchProps {
   GeneralFilterPlaceHolderText: string;
   GeneralSearcheableFields: Array<IListFieldData>;
   IndividualColumnFilter: boolean;
+  IndividualFilterPosition: string[];
   ShowClearAllFilters: boolean;
   ClearAllFiltersBtnColor: string;
   ClearAllFiltersBtnText: string;

@@ -16,24 +16,37 @@
       @include ms-Grid-row;
 
       .ColGeneralFilter {
-        @include ms-Grid-row;
-      }
-
-      .ColItemCount{
+        margin-top: 5px;
         @include ms-Grid-col;
         @include ms-lg10;
         @include ms-sm12;
       }
-
       .ColClearAll{
+        margin-top: 5px;
         @include ms-Grid-col;
         @include ms-lg2;
         @include ms-sm12;
+
+        .btn{
+          width :100%;
+        }
       }
     }
 
     .rowData {
       @include ms-Grid-row;
+
+      .colData{
+        @include ms-Grid-col;
+        @include ms-lg12;
+        @include ms-sm12;
+        padding-top: 16px;
+
+        .searchListData{
+            padding-top: 0px;
+        }
+      }
+
     }
   }
 

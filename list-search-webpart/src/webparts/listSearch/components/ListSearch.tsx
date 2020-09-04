@@ -10,12 +10,8 @@ import {
   IColumn,
   IDetailsFooterProps,
   IDetailsRowBaseProps,
-  IDetailsRowCheckStyles,
-  DetailsRowCheck,
   DetailsRow,
-  SelectionMode,
 } from 'office-ui-fabric-react/lib/DetailsList';
-import { TextField } from 'office-ui-fabric-react/lib/TextField';
 import { IListSearchListQuery } from '../model/ListSearchQuery';
 import {
   MessageBar,
@@ -33,8 +29,8 @@ import { DefaultButton, PrimaryButton } from 'office-ui-fabric-react';
 const filterIcon: IIconProps = { iconName: 'Filter' };
 
 export default class ISecondWebPart extends React.Component<IListSearchProps, IListSearchState> {
-  columns: IColumn[] = [];
-  keymapQuerys: {} = {};
+  private columns: IColumn[] = [];
+  private keymapQuerys: {} = {};
   constructor(props: IListSearchProps, state: IListSearchState) {
     super(props);
     this.state = {
@@ -44,17 +40,17 @@ export default class ISecondWebPart extends React.Component<IListSearchProps, IL
       isLoading: true,
       errorMsg: "",
       columnFilters: [],
-      generalFilter: ""
+      generalFilter: "",
     };
 
   }
 
-  componentWillReceiveProps() {
-    console.log("new props");
-    console.log(this.props.collectionData)
-    this.columns = [];
-    this.setState({ items: null, isLoading: true })
-    this.readItems();
+  public componentDidUpdate(prevProps: Readonly<IListSearchProps>, prevState: Readonly<IListSearchState>, snapshot?: any): void {
+    if (prevProps != this.props) {
+      this.columns = [];
+      this.setState({ items: null, filterItems: null, isLoading: true });
+      this.readItems();
+    }
   }
 
   public componentDidMount() {
@@ -69,16 +65,15 @@ export default class ISecondWebPart extends React.Component<IListSearchProps, IL
 
   private async readItems() {
     this.generateKeymap();
-
     let itemPromise: Array<Promise<Array<any>>> = [];
     try {
       Object.keys(this.keymapQuerys).map(site => {
         let listService: ListService = new ListService(site);
-        let siteProperties = this.props.Sites.filter(siteInformation => { if (siteInformation.url === site) return siteInformation })
+        let siteProperties = this.props.Sites.filter(siteInformation => siteInformation.url === site);
         Object.keys(this.keymapQuerys[site]).map(listQuery => {
-          itemPromise.push(listService.getListItems(this.keymapQuerys[site][listQuery], this.props.ListNameTitle, this.props.SiteNameTitle, siteProperties[0][this.props.SiteNamePropertyToShow]));
-        })
-      })
+          itemPromise.push(listService.getListItems(this.keymapQuerys[site][listQuery], this.props.ListNameTitle, this.props.SiteNameTitle, siteProperties[0][this.props.SiteNamePropertyToShow], this.props.ItemLimit));
+        });
+      });
 
       let items = await Promise.all(itemPromise);
       let result = [];
@@ -100,23 +95,22 @@ export default class ISecondWebPart extends React.Component<IListSearchProps, IL
   }
 
   private generateKeymap() {
-    //BUG WITH NEW FILTERS
-    this.props.collectionData.map(item => {
+    this.props.fieldsCollectionData.map(item => {
       if (this.keymapQuerys[item.SiteCollectionSource] != undefined) {
         if (this.keymapQuerys[item.SiteCollectionSource][item.ListSourceField] != undefined) {
-          if (this.keymapQuerys[item.SiteCollectionSource][item.ListSourceField].fields.filter(field => { if (field.originalField === item.SourceField) return field }).length == 0) {
+          if (this.keymapQuerys[item.SiteCollectionSource][item.ListSourceField].fields.filter(field => field.originalField === item.SourceField).length == 0) {
             this.keymapQuerys[item.SiteCollectionSource][item.ListSourceField].fields.push({ originalField: item.SourceField, newField: item.TargetField });
           }
         }
         else {
-          let listQueryInfo = this.props.ListscollectionData.filter(list => { if (list.SiteCollectionSource == item.SiteCollectionSource && list.ListSourceField == item.ListSourceField) return list });
+          let listQueryInfo = this.props.listsCollectionData.filter(list => list.SiteCollectionSource == item.SiteCollectionSource && list.ListSourceField == item.ListSourceField);
 
           let newQueryListItem: IListSearchListQuery = { list: item.ListSourceField, fields: [{ originalField: item.SourceField, newField: item.TargetField }], camlQuery: listQueryInfo.length > 0 && listQueryInfo[0].Query, viewName: listQueryInfo.length > 0 && listQueryInfo[0].ListView };
           this.keymapQuerys[item.SiteCollectionSource][item.ListSourceField] = newQueryListItem;
         }
       }
       else {
-        let listQueryInfo = this.props.ListscollectionData.filter(list => { if (list.SiteCollectionSource == item.SiteCollectionSource && list.ListSourceField == item.ListSourceField) return list });
+        let listQueryInfo = this.props.listsCollectionData.filter(list => list.SiteCollectionSource == item.SiteCollectionSource && list.ListSourceField == item.ListSourceField);
 
         let newQueryListItem: IListSearchListQuery = { list: item.ListSourceField, fields: [{ originalField: item.SourceField, newField: item.TargetField }], camlQuery: listQueryInfo.length > 0 && listQueryInfo[0].Query, viewName: listQueryInfo.length > 0 && listQueryInfo[0].ListView };
         this.keymapQuerys[item.SiteCollectionSource] = {};
@@ -137,10 +131,13 @@ export default class ISecondWebPart extends React.Component<IListSearchProps, IL
   public filterColumnListItems(propertyName: string, propertyValue: string) {
     let isNewFilter: boolean = true;
     let clearFilter: boolean = false;
-    let newFitlers: IColumnFilter[] = this.state.columnFilters.filter(filter => {
+    let isMoreRestricted: boolean = false;
+    let newFitlers: IColumnFilter[] = this.state.columnFilters.map(filter => {
       if (filter.columnName === propertyName) {
+        isMoreRestricted = filter.filterToApply.length < propertyValue.length;
         filter.filterToApply = propertyValue;
         isNewFilter = false;
+
       }
       if (filter.filterToApply && filter.filterToApply.length > 0) { //Remove empty filters
         return filter;
@@ -150,9 +147,10 @@ export default class ISecondWebPart extends React.Component<IListSearchProps, IL
       }
     });
 
-    if (isNewFilter) newFitlers.push({ columnName: propertyName, filterToApply: propertyValue })
+    if (isNewFilter) newFitlers.push({ columnName: propertyName, filterToApply: propertyValue });
 
-    let itemsToRefine = clearFilter || this.state.generalFilter ? this.filterListItemsByGeneralFilter(this.state.generalFilter, true, false) : this.state.filterItems;
+    let itemsToRefine = (clearFilter || this.state.generalFilter) ? this.filterListItemsByGeneralFilter(this.state.generalFilter, true, false)
+      : (isMoreRestricted ? this.state.filterItems : this.state.items);
 
     this.filterListItemsByColumnsFilter(itemsToRefine, newFitlers, false);
   }
@@ -160,15 +158,15 @@ export default class ISecondWebPart extends React.Component<IListSearchProps, IL
   public filterListItemsByColumnsFilter(itemsToRefine: any[], newFilters: IColumnFilter[], isFromClearGeneralFilter: boolean) {
     if (this.props.IndividualColumnFilter) {
       let newItems: Array<any> = [];
-      itemsToRefine.filter(item => {
+      itemsToRefine.map(item => {
         let itemFounded: boolean = true;
         newFilters.map(filter => {
           if (item[filter.columnName] == undefined || item[filter.columnName] == "" || item[filter.columnName].toString().toLowerCase().indexOf(filter.filterToApply.toLowerCase()) < 0) {
             itemFounded = false;
           }
-        })
+        });
         if (itemFounded) newItems.push(item);
-      })
+      });
 
       this.setState({ filterItems: newItems, columnFilters: newFilters, generalFilter: isFromClearGeneralFilter ? "" : this.state.generalFilter });
     }
@@ -179,9 +177,9 @@ export default class ISecondWebPart extends React.Component<IListSearchProps, IL
 
   public filterListItemsByGeneralFilter(valueToFilter: string, isClearFilter: boolean, reloadComponents: boolean) {
     if (valueToFilter && valueToFilter.length > 0) {
-      let filterItems: Array<any> = []
+      let filterItems: Array<any> = [];
       let itemsToFilter = (isClearFilter || valueToFilter.length < this.state.generalFilter.length) ? this.state.items : this.state.filterItems;
-      itemsToFilter.filter(item => {
+      itemsToFilter.map(item => {
         this.props.GeneralSearcheableFields.map(field => {
           if (filterItems.indexOf(item) < 0) {
             if (item[field.TargetField] && item[field.TargetField].toString().toLowerCase().indexOf(valueToFilter.toLowerCase()) > -1) {
@@ -189,7 +187,7 @@ export default class ISecondWebPart extends React.Component<IListSearchProps, IL
               return item;
             }
           }
-        })
+        });
 
       });
       if (reloadComponents) {
@@ -214,38 +212,39 @@ export default class ISecondWebPart extends React.Component<IListSearchProps, IL
   }
 
 
-  private _onRenderDetailsFooter(detailsFooterProps: IDetailsFooterProps): JSX.Element {
-    if (this.props.IndividualColumnFilter) {
-      let _renderDetailsFooterItemColumn: IDetailsRowBaseProps['onRenderItemColumn'] = (item, index, column) => {
-        if (column) {
-          let filter = this.state.columnFilters.filter(colFilter => { if (colFilter.columnName == column.name) return colFilter });
-          return (
-            <SearchBox placeholder={column.name} iconProps={filterIcon} value={filter && filter.length > 0 ? filter[0].filterToApply : ""}
-              underlined={true} onChange={(ev, value) => this.filterColumnListItems(column.name, value)} onClear={(ev) => this.filterColumnListItems(column.name, "")} />
-          );
-        }
+  private _onRenderDetails(detailsFooterProps: IDetailsFooterProps): JSX.Element {
+    let _renderDetailsFooterItemColumn: IDetailsRowBaseProps['onRenderItemColumn'] = (item, index, column) => {
+      let filter = this.state.columnFilters.filter(colFilter => colFilter.columnName == column.name);
+      if (this.props.IndividualColumnFilter) {
+        return (
+          <SearchBox placeholder={column.name} iconProps={filterIcon} value={filter && filter.length > 0 ? filter[0].filterToApply : ""}
+            underlined={true} onChange={(ev, value) => this.filterColumnListItems(column.name, value)} onClear={(ev) => this.filterColumnListItems(column.name, "")} />
+        );
+      }
+      else {
         return undefined;
-      };
-      return (
-        <DetailsRow
-          {...detailsFooterProps}
-          item={{}}
-          itemIndex={-1}
-          onRenderItemColumn={_renderDetailsFooterItemColumn}
-        />
-      );
-    }
-    else {
-      return <React.Fragment />
-    }
+      }
+    };
+    return (
+      <DetailsRow
+        {...detailsFooterProps}
+        item={{}}
+        itemIndex={-1}
+        onRenderItemColumn={_renderDetailsFooterItemColumn}
+      />
+    );
   }
 
-  handlePageChange(pageNumber) {
+  private handlePageChange(pageNumber) {
     this.setState({ activePage: pageNumber });
   }
 
-  _clearAllFilters() {
+  private _clearAllFilters() {
     this.setState({ columnFilters: [], filterItems: this.state.items, generalFilter: "" });
+  }
+
+  private _checkIndividualFilter(position: string): boolean {
+    return this.props.IndividualColumnFilter && this.props.IndividualFilterPosition && this.props.IndividualFilterPosition.indexOf(position) > -1;
   }
 
 
@@ -254,7 +253,8 @@ export default class ISecondWebPart extends React.Component<IListSearchProps, IL
     const { semanticColors }: IReadonlyTheme = this.props.themeVariant;
 
 
-    let clearAllButton = this.props.ClearAllFiltersBtnColor == "white" ? <DefaultButton text={this.props.ClearAllFiltersBtnText} onClick={(ev) => this._clearAllFilters()} /> : <PrimaryButton text={this.props.ClearAllFiltersBtnText} onClick={(ev) => this._clearAllFilters()} />;
+    let clearAllButton = this.props.ClearAllFiltersBtnColor == "white" ? <DefaultButton text={this.props.ClearAllFiltersBtnText} className={styles.btn} onClick={(ev) => this._clearAllFilters()} /> :
+      <PrimaryButton text={this.props.ClearAllFiltersBtnText} className={styles.btn} onClick={(ev) => this._clearAllFilters()} />;
 
     return (
       <div className={styles.listSearch} style={{ backgroundColor: semanticColors.bodyBackground }}>
@@ -272,25 +272,27 @@ export default class ISecondWebPart extends React.Component<IListSearchProps, IL
                 <React.Fragment>
                   <div className={styles.rowTopInformation}>
                     {this.props.GeneralFilter && <div className={styles.ColGeneralFilter}><SearchBox value={this.state.generalFilter} placeholder={this.props.GeneralFilterPlaceHolderText} onClear={() => this.clearGeneralFilter()} onChange={(ev, newValue) => this.filterListItemsByGeneralFilter(newValue, false, true)} /></div>}
-                    <div className={styles.ColItemCount}>
-                      {this.props.ShowItemCount && this.props.ItemCountText.replace("{itemCount}", this.state.filterItems.length.toString())}
-                    </div>
                     <div className={styles.ColClearAll}>
                       {this.props.ShowClearAllFilters && clearAllButton}
                     </div>
                   </div>
                   <div className={styles.rowData}>
-                    <DetailsList items={this.state.filterItems || []} columns={this.columns.sort((prev, next) => prev.data - next.data)}
-                      onRenderDetailsFooter={(detailsFooterProps) => this._onRenderDetailsFooter(detailsFooterProps)} />
-                    {this.props.ShowPagination &&
-                      <Pagination
-                        activePage={this.state.activePage}
-                        itemsCountPerPage={this.props.ItemsInPage}
-                        totalItemsCount={this.state.items ? this.state.items.length : 0}
-                        pageRangeDisplayed={5}
-                        onChange={this.handlePageChange.bind(this)}
-                      />
-                    }
+                    <div className={styles.colData}>
+                      {this.props.ShowItemCount && this.props.ItemCountText.replace("{itemCount}", this.state.filterItems.length.toString())}
+                      <DetailsList items={this.state.filterItems || []} columns={this.columns.sort((prev, next) => prev.data - next.data)}
+                        onRenderDetailsFooter={this._checkIndividualFilter("footer") ? (detailsFooterProps) => this._onRenderDetails(detailsFooterProps) : undefined}
+                        onRenderDetailsHeader={this._checkIndividualFilter("header") ? (detailsHeaderProps) => this._onRenderDetails(detailsHeaderProps) : undefined}
+                        className={styles.searchListData} />
+                      {this.props.ShowPagination &&
+                        <Pagination
+                          activePage={this.state.activePage}
+                          itemsCountPerPage={this.props.ItemsInPage}
+                          totalItemsCount={this.state.items ? this.state.items.length : 0}
+                          pageRangeDisplayed={5}
+                          onChange={this.handlePageChange.bind(this)}
+                        />
+                      }
+                    </div>
                   </div>
                 </React.Fragment>}
           </div>

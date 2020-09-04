@@ -5,7 +5,6 @@ import {
   IPropertyPaneConfiguration,
   PropertyPaneTextField,
   PropertyPaneToggle,
-  PropertyPaneLabel,
   PropertyPaneDropdown,
   IPropertyPaneDropdownOption
 } from '@microsoft/sp-property-pane';
@@ -25,11 +24,16 @@ import {
   ThemeChangedEventArgs,
   IReadonlyTheme
 } from '@microsoft/sp-component-base';
+import { PropertyFieldMultiSelect } from '@pnp/spfx-property-controls/lib/PropertyFieldMultiSelect';
+import { IDropdownOption } from 'office-ui-fabric-react/lib/components/Dropdown';
+import CustomCollectionDataField from './custompropertyPane/CustomCollectionDataField';
+import ListService from './services/ListService';
+
 
 export interface IListSearchWebPartProps {
   ListName: string;
-  collectionData: Array<IListFieldData>;
-  ListscollectionData: Array<IListData>;
+  fieldCollectionData: Array<IListFieldData>;
+  listsCollectionData: Array<IListData>;
   ShowListName: boolean;
   ListNameTitle: string;
   ListNameOrder: number;
@@ -42,6 +46,7 @@ export interface IListSearchWebPartProps {
   GeneralFilter: boolean;
   GeneralFilterPlaceHolderText: string;
   IndividualColumnFilter: boolean;
+  IndividualFilterPosition: string[];
   ShowClearAllFilters: boolean;
   ClearAllFiltersBtnColor: string;
   ClearAllFiltersBtnText: string;
@@ -57,8 +62,18 @@ export interface IListSearchWebPartProps {
 export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearchWebPartProps> {
   private _themeProvider: ThemeProvider;
   private _themeVariant: IReadonlyTheme | undefined;
+  private sitesLists: {} = {};
+  private ListsFields: {} = {};
 
-  protected onInit(): Promise<void> {
+  constructor(props) {
+    super();
+    this.saveSiteCollectionLists = this.saveSiteCollectionLists.bind(this);
+    this.saveSiteCollectionListsFields = this.saveSiteCollectionListsFields.bind(this);
+    this.setNewListFieds = this.setNewListFieds.bind(this);
+
+  }
+
+  protected async onInit(): Promise<void> {
     // Consume the new ThemeProvider service
     this._themeProvider = this.context.serviceScope.consume(ThemeProvider.serviceKey);
 
@@ -71,9 +86,67 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
     return super.onInit();
   }
 
+  async onPropertyPaneConfigurationStart() {
+    await this.loadCollectionData();
+  }
+
   private _handleThemeChangedEvent(args: ThemeChangedEventArgs): void {
     this._themeVariant = args.theme;
     this.render();
+  }
+
+  private async loadCollectionData() {
+    let sitesListsInfo: Promise<any> = this.loadSitesLists();
+    let listsFieldsInfo: Promise<any> = this.loadListsFields();
+    await Promise.all([sitesListsInfo, listsFieldsInfo]);
+  }
+
+  private async loadSitesLists() {
+    let listsDataPromises: Promise<any>[] = [];
+    let sites: string[] = [];
+    this.properties.sites.map((item, index, array) => {
+      if (array.indexOf(item) == index) {
+        let service: ListService = new ListService(item.url);
+        listsDataPromises.push(service.getSiteListsTitle());
+        sites.push(item.url);
+      }
+    });
+    let listData = await Promise.all(listsDataPromises);
+
+    listData.map((lists, index) => {
+      this.saveSiteCollectionLists(sites[index], lists.map(listInfo => { return listInfo.Title }));
+    })
+  }
+
+  private async loadListsFields() {
+    if (this.properties.listsCollectionData && this.properties.listsCollectionData.length > 0) {
+      let siteStructure = {}
+      this.properties.listsCollectionData.map(option => {
+        if (!siteStructure[option.SiteCollectionSource]) {
+          siteStructure[option.SiteCollectionSource] = [];
+        }
+        siteStructure[option.SiteCollectionSource].push(option.ListSourceField);
+      });
+
+      let listsDataPromises: Promise<any>[] = [];
+      let lists: string[] = [];
+      let sites: string[] = [];
+
+      Object.keys(siteStructure).map(site => {
+        let service: ListService = new ListService(site);
+        siteStructure[site].map(list => {
+          listsDataPromises.push(service.getListFieldsTitle(list));
+          lists.push(list);
+          sites.push(site);
+        })
+      })
+
+      let listData = await Promise.all(listsDataPromises);
+
+      listData.map((fields, index) => {
+        this.saveSiteCollectionListsFields(sites[index], lists[index], fields.map(fieldInfo => { return fieldInfo.Title }));
+      })
+    }
   }
 
   public render(): void {
@@ -95,7 +168,7 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
       renderElement = placeholder;
     }
     else {
-      let sercheableFields = this.properties.collectionData.filter(fieldData => { if (fieldData.Searcheable) return fieldData.TargetField })
+      let sercheableFields = this.properties.fieldCollectionData.filter(fieldData => { if (fieldData.Searcheable) return fieldData.TargetField; });
 
       if (this.properties.ListNameSearcheable) {
         const listNameData: IListFieldData = { ListSourceField: "", Order: 0, Searcheable: true, SiteCollectionSource: "", SourceField: this.properties.ListNameTitle, TargetField: this.properties.ListNameTitle };
@@ -104,15 +177,15 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
 
       if (this.properties.SiteNameSearcheable) {
         const SiteNameData: IListFieldData = { ListSourceField: "", Order: 0, Searcheable: true, SiteCollectionSource: "", SourceField: this.properties.SiteNameTitle, TargetField: this.properties.SiteNameTitle };
-        sercheableFields.push(SiteNameData)
+        sercheableFields.push(SiteNameData);
       }
 
       const element: React.ReactElement<IListSearchProps> = React.createElement(
         ListSearch,
         {
           Sites: this.properties.sites,
-          collectionData: this.properties.collectionData,
-          ListscollectionData: this.properties.ListscollectionData,
+          fieldsCollectionData: this.properties.fieldCollectionData,
+          listsCollectionData: this.properties.listsCollectionData,
           ShowListName: this.properties.ShowListName,
           ListNameTitle: this.properties.ListNameTitle,
           ListNameOrder: this.properties.ListNameOrder,
@@ -129,6 +202,7 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
           ClearAllFiltersBtnText: this.properties.ClearAllFiltersBtnText,
           GeneralSearcheableFields: sercheableFields,
           IndividualColumnFilter: this.properties.IndividualColumnFilter,
+          IndividualFilterPosition: this.properties.IndividualFilterPosition,
           ShowItemCount: this.properties.ShowItemCount,
           ItemCountText: this.properties.ItemCountText,
           ItemLimit: this.properties.ItemLimit,
@@ -144,11 +218,9 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
     ReactDom.render(renderElement, this.domElement);
   }
 
-  private getSite
-
   private isConfig(): boolean {
-    return this.properties.sites && this.properties.collectionData && this.properties.collectionData.length > 0 &&
-      this.properties.ListscollectionData && this.properties.ListscollectionData.length > 0;
+    return this.properties.sites && this.properties.sites.length > 0 && this.properties.fieldCollectionData && this.properties.fieldCollectionData.length > 0 &&
+      this.properties.listsCollectionData && this.properties.listsCollectionData.length > 0;
   }
 
   protected get dataVersion(): Version {
@@ -159,7 +231,7 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
     return true;
   }
 
-  onPropertyPaneFieldChanged(propertyPath: string, oldValue: any, newValue: any) {
+  protected async onPropertyPaneFieldChanged(propertyPath: string, oldValue: any, newValue: any, sitesLists?: {}, saveSitesInfoCallback?: any) {
     super.onPropertyPaneFieldChanged(propertyPath, oldValue, newValue);
     switch (propertyPath) {
       case "ShowListName":
@@ -176,13 +248,43 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
           }
           break;
         }
+      case "sites":
+        {
+          if (sitesLists) {
+            if (newValue && oldValue && newValue.length > 0 && oldValue.length < newValue.length) {
+              await newValue.map(async site => {
+                if (oldValue.indexOf(site) < 0) {
+                  let service: ListService = new ListService(site.url);
+                  let lists = await service.getSiteListsTitle();
+                  saveSitesInfoCallback(site.url, lists.map(listInfo => { return listInfo.Title }));
+                }
+              });
+            }
+          }
+          break;
+        }
     }
+  }
+
+  private getDistinctSiteCollectionSourceOptions(): IDropdownOption[] {
+    let options: IDropdownOption[] = [];
+    let siteOptions = this.properties.listsCollectionData.map(option => option.SiteCollectionSource);
+    siteOptions.map((item, index, array) => {
+      if (array.indexOf(item) == index) {
+        options.push({
+          key: item,
+          text: item
+        });
+      }
+    });
+
+    return options;
   }
 
 
   protected getPropertyPaneConfiguration(): IPropertyPaneConfiguration {
     try {
-      let SiteTitleOptions: IPropertyPaneDropdownOption[] = []
+      let SiteTitleOptions: IPropertyPaneDropdownOption[] = [];
       SiteTitleOptions.push({ key: "id", text: "Id" });
       SiteTitleOptions.push({ key: "title", text: "Title" });
       SiteTitleOptions.push({ key: "url", text: "Url" });
@@ -203,7 +305,7 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
         disabled: !this.properties.ShowListName
       }) : emptyProperty;
 
-      let ListNameSearcheable = this.properties.ShowListName ? PropertyPaneToggle('ListNameSearcheable', {
+      let ListNameSearcheablePropertyPane = this.properties.ShowListName ? PropertyPaneToggle('ListNameSearcheable', {
         label: "List title searcheable in general filter",
       }) : emptyProperty;
 
@@ -226,32 +328,48 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
         disabled: !this.properties.ShowSiteTitle
       }) : emptyProperty;
 
-      let SiteNameSearcheable = this.properties.ShowSiteTitle ? PropertyPaneToggle('SiteNameSearcheable', {
+      let SiteNameSearcheablePropertyPane = this.properties.ShowSiteTitle ? PropertyPaneToggle('SiteNameSearcheable', {
         label: "Site title searcheable in general filter",
       }) : emptyProperty;
 
-      let GeneralFilterPlaceHolder = this.properties.GeneralFilter ? PropertyPaneTextField('GeneralFilterPlaceHolderText', {
+      let GeneralFilterPlaceHolderPropertyPane = this.properties.GeneralFilter ? PropertyPaneTextField('GeneralFilterPlaceHolderText', {
         label: "General filter placeholder",
       }) : emptyProperty;
 
-      let ClearAlFiltersBtnText = this.properties.ShowClearAllFilters ? PropertyPaneTextField('ClearAllFiltersBtnText', {
+      let IndividualFilterPositionPropertyPane = this.properties.IndividualColumnFilter ? PropertyFieldMultiSelect('IndividualFilterPosition', {
+        key: 'multiSelect',
+        label: "Multi select field",
+        options: [
+          {
+            key: "header",
+            text: "Header"
+          },
+          {
+            key: "footer",
+            text: "Footer"
+          },
+        ],
+        selectedKeys: this.properties.IndividualFilterPosition
+      }) : emptyProperty;
+
+      let ClearAlFiltersBtnTextPropertyPane = this.properties.ShowClearAllFilters ? PropertyPaneTextField('ClearAllFiltersBtnText', {
         label: "Clear all filters text",
       }) : emptyProperty;
 
-      let clearAllFiltersBtnColorOptions: IPropertyPaneDropdownOption[] = []
+      let clearAllFiltersBtnColorOptions: IPropertyPaneDropdownOption[] = [];
       clearAllFiltersBtnColorOptions.push({ key: "white", text: "White" });
       clearAllFiltersBtnColorOptions.push({ key: "theme", text: "Theme" });
-      let ClearAlFiltersBtnColor = this.properties.ShowClearAllFilters ? PropertyPaneDropdown('ClearAllFiltersBtnColor', {
+      let ClearAlFiltersBtnColorPropertyPane = this.properties.ShowClearAllFilters ? PropertyPaneDropdown('ClearAllFiltersBtnColor', {
         label: "Clear all filters button color",
         options: clearAllFiltersBtnColorOptions
       }) : emptyProperty;
 
-      let ItemCountTextField = this.properties.ShowItemCount ? PropertyPaneTextField('ItemCountText', {
+      let ItemCountTextFieldPropertyPane = this.properties.ShowItemCount ? PropertyPaneTextField('ItemCountText', {
         label: "Item count text",
         placeholder: "Use {itemCount} to insert items count number"
       }) : emptyProperty;
 
-      let ItemsInPage = this.properties.ShowPagination ? PropertyFieldNumber("ItemsInPage", {
+      let ItemsInPagePropertyPane = this.properties.ShowPagination ? PropertyFieldNumber("ItemsInPage", {
         key: "ItemsInPage",
         label: "Item elements in page",
         value: this.properties.ItemsInPage || null,
@@ -272,16 +390,16 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
                     initialSites: this.properties.sites || [],
                     context: this.context,
                     multiSelect: true,
-                    onPropertyChange: this.onPropertyPaneFieldChanged,
+                    onPropertyChange: (propertyPath, oldValue, newValue) => this.onPropertyPaneFieldChanged(propertyPath, oldValue, newValue, this.sitesLists, this.saveSiteCollectionLists),
                     properties: this.properties,
                     key: 'sitesFieldId',
                   }),
-                  PropertyFieldCollectionData("ListscollectionData", {
-                    key: "ListscollectionData",
+                  PropertyFieldCollectionData("listsCollectionData", {
+                    key: "listsCollectionData",
                     label: "Lists data",
                     panelHeader: "Collection list data panel header",
                     manageBtnLabel: "Manage lists data",
-                    value: this.properties.ListscollectionData,
+                    value: this.properties.listsCollectionData,
                     fields: [
                       {
                         id: "SiteCollectionSource",
@@ -291,15 +409,22 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
                           return {
                             key: site.url,
                             text: site.url
-                          }
+                          };
                         }),
                         required: true,
                       },
                       {
                         id: "ListSourceField",
                         title: "List",
-                        type: CustomCollectionFieldType.string,
-                        required: true
+                        type: CustomCollectionFieldType.custom,
+                        required: true,
+                        onCustomRender: (field, value, onUpdate, item, itemId, onError) => {
+                          if (item.SiteCollectionSource) {
+                            return (
+                              CustomCollectionDataField.getListPickerBySite(this.sitesLists[item.SiteCollectionSource], field, item, onUpdate, this.setNewListFieds)
+                            );
+                          }
+                        }
                       },
                       {
                         id: "ListView",
@@ -318,7 +443,7 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
                   PropertyPaneToggle('ShowItemCount', {
                     label: "Show item count",
                   }),
-                  ItemCountTextField,
+                  ItemCountTextFieldPropertyPane,
                   PropertyFieldNumber("ItemLimit", {
                     key: "ItemLimit",
                     label: "Item limit to show",
@@ -328,7 +453,7 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
                   PropertyPaneToggle('ShowPagination', {
                     label: "Show pagination",
                   }),
-                  ItemsInPage
+                  ItemsInPagePropertyPane
                 ]
               }
             ]
@@ -341,42 +466,43 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
               {
                 groupName: "Field Properties",
                 groupFields: [
-                  PropertyFieldCollectionData("collectionData", {
-                    key: "collectionData",
+                  PropertyFieldCollectionData("fieldCollectionData", {
+                    key: "fieldCollectionData",
                     label: "Collection data",
                     panelHeader: "Collection data panel header",
                     manageBtnLabel: "Manage collection data",
-                    value: this.properties.collectionData,
+                    value: this.properties.fieldCollectionData,
                     fields: [
                       {
                         id: "SiteCollectionSource",
                         title: "Site Collection",
                         type: CustomCollectionFieldType.dropdown,
-                        options: this.properties.ListscollectionData && this.properties.ListscollectionData.map(site => {
-                          return {
-                            key: site.SiteCollectionSource,
-                            text: site.SiteCollectionSource
-                          }
-                        }),
+                        options: this.getDistinctSiteCollectionSourceOptions(),
                         required: true
                       },
                       {
                         id: "ListSourceField",
                         title: "List",
-                        type: CustomCollectionFieldType.dropdown,
-                        options: this.properties.ListscollectionData && this.properties.ListscollectionData.map(site => {
-                          return {
-                            key: site.ListSourceField,
-                            text: site.ListSourceField
-                          }
-                        }),
-                        required: true
+                        type: CustomCollectionFieldType.custom,
+                        required: true,
+                        onCustomRender: (field, value, onUpdate, item, itemId, onError) => {
+                          return (
+                            CustomCollectionDataField.getListPickerBySiteOptions(this.properties.listsCollectionData, field, item, onUpdate)
+                          );
+                        }
                       },
                       {
                         id: "SourceField",
-                        title: "Source field",
-                        type: CustomCollectionFieldType.string,
-                        required: true
+                        title: "List Field",
+                        type: CustomCollectionFieldType.custom,
+                        required: true,
+                        onCustomRender: (field, value, onUpdate, item, itemId, onError) => {
+                          if (item.SiteCollectionSource && item.ListSourceField) {
+                            return (
+                              CustomCollectionDataField.getFieldPickerByList(this.ListsFields[item.SiteCollectionSource][item.ListSourceField], field, item, onUpdate)
+                            );
+                          }
+                        }
                       },
                       {
                         id: "TargetField",
@@ -396,7 +522,7 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
                         title: "Searcheable in general filter",
                         type: CustomCollectionFieldType.boolean,
                         defaultValue: true
-                      }
+                      },
                     ],
                     disabled: !this.properties.sites || this.properties.sites.length == 0,
 
@@ -412,7 +538,7 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
                   }),
                   ListNameTitlePropertyPane,
                   ListNameOrderPropertyPane,
-                  ListNameSearcheable
+                  ListNameSearcheablePropertyPane
                   ,
                   PropertyPaneToggle('ShowSiteTitle', {
                     label: "Show site information",
@@ -422,7 +548,7 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
                   SiteNamePropertyToShowPropertyPane,
                   SiteNameTitlePropertyPane,
                   SiteNameOrderPropertyPane,
-                  SiteNameSearcheable
+                  SiteNameSearcheablePropertyPane
                 ]
               }
             ]
@@ -439,18 +565,19 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
                     label: "General Filter",
                     checked: this.properties.GeneralFilter
                   }),
-                  GeneralFilterPlaceHolder
+                  GeneralFilterPlaceHolderPropertyPane
                   ,
                   PropertyPaneToggle('IndividualColumnFilter', {
                     label: "Indovidual column filter",
                     checked: this.properties.IndividualColumnFilter
                   }),
+                  IndividualFilterPositionPropertyPane,
                   PropertyPaneToggle('ShowClearAllFilters', {
                     label: "Show button clear all filters",
                     checked: this.properties.ShowClearAllFilters
                   }),
-                  ClearAlFiltersBtnColor,
-                  ClearAlFiltersBtnText
+                  ClearAlFiltersBtnColorPropertyPane,
+                  ClearAlFiltersBtnTextPropertyPane
                 ]
               }
             ]
@@ -461,5 +588,26 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
     catch (error) {
       console.error(error);
     }
+  }
+
+  private saveSiteCollectionLists(site: string, Lists: string[]) {
+    this.sitesLists[site] = Lists;
+  }
+
+  private saveSiteCollectionListsFields(site: string, list: string, fields: string[]) {
+    if (this.ListsFields[site] == undefined) {
+      this.ListsFields[site] = {};
+    }
+    this.ListsFields[site][list] = fields;
+  }
+
+  private async setNewListFieds(row: IListData, fieldId: string, optionKey: string, updateFunction: any, errorFunction: any) {
+    updateFunction(fieldId, optionKey);
+    if (this.ListsFields[row.SiteCollectionSource] == undefined) {
+      this.ListsFields[row.SiteCollectionSource] = {};
+    }
+    let service: ListService = new ListService(row.SiteCollectionSource);
+    let fields = await service.getListFieldsTitle(optionKey);
+    this.ListsFields[row.SiteCollectionSource][optionKey] = fields.map(fieldInfo => { return fieldInfo.Title });
   }
 }
