@@ -50,6 +50,7 @@ declare interface IListSearchWebPartStrings {
   GeneralPropertiesItemCountText:string;
   GeneralPropertiesItemCountPlaceholder:string;
   GeneralPropertiesItemPerPage:string;
+  ListSearchLoading:string;
 }
 
 declare module 'ListSearchWebPartStrings' {

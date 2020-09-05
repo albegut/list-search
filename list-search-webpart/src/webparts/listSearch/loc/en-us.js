@@ -51,6 +51,7 @@ define([], function() {
     GeneralPropertiesItemCountText:"Item count text to display",
     GeneralPropertiesItemCountPlaceholder:"Use {itemCount} to insert items count number",
     GeneralPropertiesItemPerPage:"Items per page",
+    ListSearchLoading:"Loading..."
 
 
 

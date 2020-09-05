@@ -88,7 +88,7 @@ export default class ISecondWebPart extends React.Component<IListSearchProps, IL
       });
     } catch (error) {
       this.setState({
-        errorMsg: "readItemsError",
+        errorMsg: `readItemsError ${error.message}`,
         isLoading: false,
       });
     }
@@ -261,7 +261,7 @@ export default class ISecondWebPart extends React.Component<IListSearchProps, IL
         <div className={styles.row}>
           <div className={styles.column}>
             {this.state.isLoading ?
-              <Spinner label="Cargando..." size={SpinnerSize.large} style={{ backgroundColor: semanticColors.bodyBackground }} /> :
+              <Spinner label={strings.ListSearchLoading} size={SpinnerSize.large} style={{ backgroundColor: semanticColors.bodyBackground }} /> :
               this.state.errorMsg ?
                 <MessageBar
                   messageBarType={MessageBarType.error}
