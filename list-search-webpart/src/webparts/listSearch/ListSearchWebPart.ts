@@ -292,53 +292,53 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
       let emptyProperty = new EmptyPropertyPane();
 
       let ListNameTitlePropertyPane = this.properties.ShowListName ? PropertyPaneTextField('ListNameTitle', {
-        label: strings.ListFieldLabel,
+        label: strings.GeneralFieldsPropertiesListDisplayName,
         disabled: !this.properties.ShowListName
       }) : emptyProperty;
 
       let ListNameOrderPropertyPane = this.properties.ShowListName ? PropertyFieldNumber("ListNameOrder", {
         key: "ListNameOrder",
-        label: "List column order",
+        label: strings.GeneralFieldsPropertiesListDisplayNameOrder,
         minValue: 0,
-        description: "Order of List Name column",
+        description: strings.GeneralFieldsPropertiesListDisplayNameOrderDescription,
         value: this.properties.ListNameOrder || null,
         disabled: !this.properties.ShowListName
       }) : emptyProperty;
 
       let ListNameSearcheablePropertyPane = this.properties.ShowListName ? PropertyPaneToggle('ListNameSearcheable', {
-        label: "List title searcheable in general filter",
+        label: strings.GeneralFieldsPropertiesListDisplayNameSearcheable,
       }) : emptyProperty;
 
       let SiteNameTitlePropertyPane = this.properties.ShowSiteTitle ? PropertyPaneTextField('SiteNameTitle', {
-        label: "Site column title",
+        label: strings.GeneralFieldsPropertiesSiteDisplayName,
         disabled: !this.properties.ShowSiteTitle
       }) : emptyProperty;
 
       let SiteNamePropertyToShowPropertyPane = this.properties.ShowSiteTitle ? PropertyPaneDropdown('SiteNamePropertyToShow', {
-        label: "Property to show",
+        label: strings.GeneralFieldsPropertiesSiteProperty,
         disabled: !this.properties.ShowSiteTitle,
         options: SiteTitleOptions
       }) : emptyProperty;
 
       let SiteNameOrderPropertyPane = this.properties.ShowSiteTitle ? PropertyFieldNumber("SiteNameOrder", {
         key: "SiteNameOrder",
-        label: "Site column Order",
-        description: "Order of site title column",
+        label: strings.GeneralFieldsPropertiesSiteDisplayNameOrder,
+        description: strings.GeneralFieldsPropertiesSiteDisplayNameOrderDescription,
         value: this.properties.SiteNameOrder || null,
         disabled: !this.properties.ShowSiteTitle
       }) : emptyProperty;
 
       let SiteNameSearcheablePropertyPane = this.properties.ShowSiteTitle ? PropertyPaneToggle('SiteNameSearcheable', {
-        label: "Site title searcheable in general filter",
+        label: strings.GeneralFieldsPropertiesSiteDisplayNameSearcheable,
       }) : emptyProperty;
 
       let GeneralFilterPlaceHolderPropertyPane = this.properties.GeneralFilter ? PropertyPaneTextField('GeneralFilterPlaceHolderText', {
-        label: "General filter placeholder",
+        label: strings.FilterPropertiesGeneralFilterPlaceHolder,
       }) : emptyProperty;
 
       let IndividualFilterPositionPropertyPane = this.properties.IndividualColumnFilter ? PropertyFieldMultiSelect('IndividualFilterPosition', {
         key: 'multiSelect',
-        label: "Multi select field",
+        label: strings.FilterPropertiesIndividualFilterPostion,
         options: [
           {
             key: "header",
@@ -353,25 +353,25 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
       }) : emptyProperty;
 
       let ClearAlFiltersBtnTextPropertyPane = this.properties.ShowClearAllFilters ? PropertyPaneTextField('ClearAllFiltersBtnText', {
-        label: "Clear all filters text",
+        label: strings.FilterPropertiesClearAllBtnText,
       }) : emptyProperty;
 
       let clearAllFiltersBtnColorOptions: IPropertyPaneDropdownOption[] = [];
       clearAllFiltersBtnColorOptions.push({ key: "white", text: "White" });
       clearAllFiltersBtnColorOptions.push({ key: "theme", text: "Theme" });
       let ClearAlFiltersBtnColorPropertyPane = this.properties.ShowClearAllFilters ? PropertyPaneDropdown('ClearAllFiltersBtnColor', {
-        label: "Clear all filters button color",
+        label: strings.FilterPropertiesClearAllBtnColor,
         options: clearAllFiltersBtnColorOptions
       }) : emptyProperty;
 
       let ItemCountTextFieldPropertyPane = this.properties.ShowItemCount ? PropertyPaneTextField('ItemCountText', {
-        label: "Item count text",
-        placeholder: "Use {itemCount} to insert items count number"
+        label: strings.GeneralPropertiesItemCountText,
+        placeholder: strings.GeneralPropertiesItemCountPlaceholder
       }) : emptyProperty;
 
       let ItemsInPagePropertyPane = this.properties.ShowPagination ? PropertyFieldNumber("ItemsInPage", {
         key: "ItemsInPage",
-        label: "Item elements in page",
+        label: strings.GeneralPropertiesItemPerPage,
         value: this.properties.ItemsInPage || null,
       }) : emptyProperty;
 
@@ -385,6 +385,7 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
             groups: [
               {
                 groupName: strings.SourceSelectorGroup,
+                isCollapsed:true,
                 groupFields: [
                   PropertyFieldSitePicker('sites', {
                     label: strings.SitesSelector,
@@ -404,7 +405,7 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
                     fields: [
                       {
                         id: "SiteCollectionSource",
-                        title: "Site Collection",
+                        title: strings.CollectionDataSiteCollectionTitle,
                         type: CustomCollectionFieldType.dropdown,
                         options: this.properties.sites && this.properties.sites.map(site => {
                           return {
@@ -416,7 +417,7 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
                       },
                       {
                         id: "ListSourceField",
-                        title: "List",
+                        title: strings.CollectionDataListTitle,
                         type: CustomCollectionFieldType.custom,
                         required: true,
                         onCustomRender: (field, value, onUpdate, item, itemId, onError) => {
@@ -429,13 +430,14 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
                       },
                       {
                         id: "ListView",
-                        title: "List view name",
+                        title: strings.CollectionDataListViewNameTitle,
                         type: CustomCollectionFieldType.string,
 
                       },
                       {
                         id: "Query",
-                        title: "Custom CAML query - empty all elements",
+                        title: strings.CollectionDataListCamlQueryTitle,
+                        placeholder: strings.CollectionDataListCamlQueryPlaceHolder,
                         type: CustomCollectionFieldType.string,
                       }
                     ],
@@ -448,17 +450,17 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
                 isCollapsed:true,
                 groupFields: [
                   PropertyPaneToggle('ShowItemCount', {
-                    label: "Show item count",
+                    label: strings.GeneralPropertiesShowItemCount,
                   }),
                   ItemCountTextFieldPropertyPane,
                   PropertyFieldNumber("ItemLimit", {
                     key: "ItemLimit",
-                    label: "Item limit to show",
-                    description: "If 0 all items are render",
+                    label: strings.GeneralPropertiesRowLimitLabel,
+                    description: strings.GeneralPropertiesRowLimitDescription,
                     value: this.properties.ItemLimit || null,
                   }),
                   PropertyPaneToggle('ShowPagination', {
-                    label: "Show pagination",
+                    label: strings.GeneralPropertiesShowPagination,
                   }),
                   ItemsInPagePropertyPane
                 ]
@@ -468,31 +470,31 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
           },
           {
             header: {
-              description: "Field Properties"
+              description: strings.FieldPropertiesGroup
             },
             displayGroupsAsAccordion: true,
             groups: [
               {
-                groupName: "Field Properties",
+                groupName: strings.CollectionDataFieldsProperties,
                 isCollapsed: true,
                 groupFields: [
                   PropertyFieldCollectionData("fieldCollectionData", {
                     key: "fieldCollectionData",
-                    label: "Collection data",
-                    panelHeader: "Collection data panel header",
-                    manageBtnLabel: "Manage collection data",
+                    label: strings.CollectionDataFieldsToRetreive,
+                    panelHeader: strings.CollectionDataFieldsHeader,
+                    manageBtnLabel: strings.CollectionDataFieldsSelectBtn,
                     value: this.properties.fieldCollectionData,
                     fields: [
                       {
                         id: "SiteCollectionSource",
-                        title: "Site Collection",
+                        title: strings.CollectionDataFieldsSiteCollection,
                         type: CustomCollectionFieldType.dropdown,
                         options: this.getDistinctSiteCollectionSourceOptions(),
                         required: true
                       },
                       {
                         id: "ListSourceField",
-                        title: "List",
+                        title: strings.CollectionDataFieldsList,
                         type: CustomCollectionFieldType.custom,
                         required: true,
                         onCustomRender: (field, value, onUpdate, item, itemId, onError) => {
@@ -503,7 +505,7 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
                       },
                       {
                         id: "SourceField",
-                        title: "List Field",
+                        title: strings.CollectionDataFieldsListField,
                         type: CustomCollectionFieldType.custom,
                         required: true,
                         onCustomRender: (field, value, onUpdate, item, itemId, onError) => {
@@ -516,20 +518,20 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
                       },
                       {
                         id: "TargetField",
-                        title: "Target field",
+                        title: strings.CollectionDataFieldsTargetField,
                         type: CustomCollectionFieldType.string,
                         required: true
                       },
                       {
                         id: "Order",
-                        title: "Order",
+                        title: strings.CollectionDataFieldsOrder,
                         type: CustomCollectionFieldType.number,
                         required: true
                       }
                       ,
                       {
                         id: "Searcheable",
-                        title: "Searcheable in general filter",
+                        title: strings.CollectionDataFieldsSearchable,
                         type: CustomCollectionFieldType.boolean,
                         defaultValue: true
                       },
@@ -539,11 +541,11 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
                   })]
               },
               {
-                groupName: "Additional Properties",
+                groupName: strings.GeneralFieldsPropertiesGroup,
                 isCollapsed: true,
                 groupFields: [
                   PropertyPaneToggle('ShowListName', {
-                    label: strings.ListFieldLabel,
+                    label: strings.GeneralFieldsPropertiesShowListName,
                     disabled: !this.properties.sites || this.properties.sites.length == 0,
                     checked: !!this.properties.sites && this.properties.sites.length > 0 && this.properties.ShowListName
                   }),
@@ -552,7 +554,7 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
                   ListNameSearcheablePropertyPane
                   ,
                   PropertyPaneToggle('ShowSiteTitle', {
-                    label: "Show site information",
+                    label: strings.GeneralFieldsPropertiesShowSiteInformation,
                     disabled: !this.properties.sites || this.properties.sites.length == 0,
                     checked: !!this.properties.sites && this.properties.sites.length > 0 && this.properties.ShowSiteTitle
                   }),
@@ -566,25 +568,27 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
           },
           {
             header: {
-              description: "Filter Options"
+              description: strings.FilterPropertiesGroup
             },
+            displayGroupsAsAccordion:true,
             groups: [
               {
-                groupName: "Field Properties",
+                groupName: strings.FilterPropertiesGroupName,
+                isCollapsed:true,
                 groupFields: [
                   PropertyPaneToggle('GeneralFilter', {
-                    label: "General Filter",
+                    label: strings.FilterPropertiesGeneralFilter,
                     checked: this.properties.GeneralFilter
                   }),
                   GeneralFilterPlaceHolderPropertyPane
                   ,
                   PropertyPaneToggle('IndividualColumnFilter', {
-                    label: "Indovidual column filter",
+                    label: strings.FilterPropertiesIndividualFilter,
                     checked: this.properties.IndividualColumnFilter
                   }),
                   IndividualFilterPositionPropertyPane,
                   PropertyPaneToggle('ShowClearAllFilters', {
-                    label: "Show button clear all filters",
+                    label: strings.FilterPropertiesClearAllBtn,
                     checked: this.properties.ShowClearAllFilters
                   }),
                   ClearAlFiltersBtnColorPropertyPane,
