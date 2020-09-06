@@ -28,6 +28,7 @@ import { PropertyFieldMultiSelect } from '@pnp/spfx-property-controls/lib/Proper
 import { IDropdownOption } from 'office-ui-fabric-react/lib/components/Dropdown';
 import CustomCollectionDataField from './custompropertyPane/CustomCollectionDataField';
 import ListService from './services/ListService';
+import { IListField } from './model/IListField';
 
 
 export interface IListSearchWebPartProps {
@@ -56,7 +57,7 @@ export interface IListSearchWebPartProps {
   ItemLimit: number;
   ShowPagination: boolean;
   ItemsInPage: number;
-
+  minutesToCache:number;
 }
 
 export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearchWebPartProps> {
@@ -135,7 +136,7 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
       Object.keys(siteStructure).map(site => {
         let service: ListService = new ListService(site);
         siteStructure[site].map(list => {
-          listsDataPromises.push(service.getListFieldsTitle(list));
+          listsDataPromises.push(service.getListFields(list));
           lists.push(list);
           sites.push(site);
         })
@@ -144,7 +145,7 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
       let listData = await Promise.all(listsDataPromises);
 
       listData.map((fields, index) => {
-        this.saveSiteCollectionListsFields(sites[index], lists[index], fields.map(fieldInfo => { return fieldInfo.Title }));
+        this.saveSiteCollectionListsFields(sites[index], lists[index], fields);
       })
     }
   }
@@ -209,6 +210,7 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
           ShowPagination: this.properties.ShowPagination,
           ItemsInPage: this.properties.ItemsInPage,
           themeVariant: this._themeVariant,
+          minutesToCache:this.properties.minutesToCache,
         }
       );
       renderElement = element;
@@ -250,8 +252,9 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
         }
       case "sites":
         {
-          if (sitesLists) {
-            if (newValue && oldValue && newValue.length > 0 && oldValue.length < newValue.length) {
+
+          if (newValue && oldValue) {
+            if (newValue.length > 0 && oldValue.length < newValue.length) {
               await newValue.map(async site => {
                 if (oldValue.indexOf(site) < 0) {
                   let service: ListService = new ListService(site.url);
@@ -260,9 +263,17 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
                 }
               });
             }
+            else {
+              let difference = oldValue.filter(x => newValue.indexOf(x) === -1);
+
+              difference.map(site => {
+                this.properties.listsCollectionData = this.properties.listsCollectionData.filter(item => item.SiteCollectionSource != site.url);
+                this.properties.fieldCollectionData = this.properties.fieldCollectionData.filter(item => item.SiteCollectionSource != site.url);
+              });
+            }
           }
-          break;
         }
+        break;
     }
   }
 
@@ -381,11 +392,11 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
             header: {
               description: strings.PropertyPaneDescription
             },
-            displayGroupsAsAccordion:true,
+            displayGroupsAsAccordion: true,
             groups: [
               {
                 groupName: strings.SourceSelectorGroup,
-                isCollapsed:true,
+                isCollapsed: true,
                 groupFields: [
                   PropertyFieldSitePicker('sites', {
                     label: strings.SitesSelector,
@@ -447,7 +458,7 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
               },
               {
                 groupName: strings.GeneralPropertiesGroup,
-                isCollapsed:true,
+                isCollapsed: true,
                 groupFields: [
                   PropertyPaneToggle('ShowItemCount', {
                     label: strings.GeneralPropertiesShowItemCount,
@@ -570,11 +581,11 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
             header: {
               description: strings.FilterPropertiesGroup
             },
-            displayGroupsAsAccordion:true,
+            displayGroupsAsAccordion: true,
             groups: [
               {
                 groupName: strings.FilterPropertiesGroupName,
-                isCollapsed:true,
+                isCollapsed: true,
                 groupFields: [
                   PropertyPaneToggle('GeneralFilter', {
                     label: strings.FilterPropertiesGeneralFilter,
@@ -609,7 +620,7 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
     this.sitesLists[site] = Lists;
   }
 
-  private saveSiteCollectionListsFields(site: string, list: string, fields: string[]) {
+  private saveSiteCollectionListsFields(site: string, list: string, fields: IListField[]) {
     if (this.ListsFields[site] == undefined) {
       this.ListsFields[site] = {};
     }
@@ -622,7 +633,7 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
       this.ListsFields[row.SiteCollectionSource] = {};
     }
     let service: ListService = new ListService(row.SiteCollectionSource);
-    let fields = await service.getListFieldsTitle(optionKey);
-    this.ListsFields[row.SiteCollectionSource][optionKey] = fields.map(fieldInfo => { return fieldInfo.Title });
+    let fields: IListField[] = await service.getListFields(optionKey);
+    this.ListsFields[row.SiteCollectionSource][optionKey] = fields;
   }
 }

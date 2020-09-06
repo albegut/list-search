@@ -42,6 +42,67 @@
         @include ms-sm12;
         padding-top: 16px;
 
+        .template_resultCount {
+          padding-left: 10px;
+          margin-bottom: 10px;
+          @include ms-fontWeight-semibold;
+        }
+
+        .paginationContainer {
+          margin: 0;
+
+          &__paginationContainer {
+              text-align: center;
+
+              &__pagination {
+                  display: inline-block;
+                  text-align: center;
+
+                  .inverted a {
+                      color:  #ffffff;
+                  }
+
+                  .standard a {
+                      color: "[theme: themePrimary, default: #005a9e]";
+                  }
+
+                  ul {
+                      display: inline-block;
+                      padding-left: 0;
+                      margin: 0;
+
+                      li {
+                          display: inline;
+
+                          a {
+                              float: left;
+                              padding: 5px 5px;
+                              text-decoration: none;
+                              i {
+                                  font-size: 10px;
+                              }
+                          }
+
+                          .active {
+                              font-weight: 700;
+                              color: "[theme: themeDark, default: #005a9e]";
+                              text-decoration: underline;
+                          }
+
+                          .active__inverted {
+                              font-weight: 700;
+                              color: #ffffff;
+                              text-decoration: underline;
+                          }
+
+                          a:visited {
+                              color: inherit;
+                          }
+                      }
+                  }
+              }
+          }
+
         .searchListData{
             padding-top: 0px;
         }
@@ -49,6 +110,9 @@
 
     }
   }
+
+
+}
 
 
 }

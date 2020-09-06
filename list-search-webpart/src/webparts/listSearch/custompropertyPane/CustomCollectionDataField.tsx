@@ -5,6 +5,8 @@ import { IListFieldData, IListData } from '../model/IListConfigProps';
 import { PropertyFieldListPicker, PropertyFieldListPickerOrderBy } from '@pnp/spfx-property-controls/lib/PropertyFieldListPicker';
 import { IPropertyPaneDropdownOption } from '@microsoft/sp-webpart-base';
 import ListService from '../services/ListService';
+import { IListField } from '../model/IListField';
+import { GeneralFieldsPropertiesListDisplayNameOrderDescription } from 'ListSearchWebPartStrings';
 
 
 
@@ -39,10 +41,10 @@ export default class CustomCollectionDataField {
     return this.getCustomCollectionDropDown(options, field, row, updateFunction, null, customOnChange);
   }
 
-  public static getFieldPickerByList(possibleOptions: Array<string>, field: ICustomCollectionField, row: IListData, updateFunction: any): JSX.Element {
+  public static getFieldPickerByList(possibleOptions: Array<IListField>, field: ICustomCollectionField, row: IListData, updateFunction: any): JSX.Element {
     let options = [];
     if (possibleOptions) {
-      options = possibleOptions.map(option => { return { key: option, text: option } });
+      options = possibleOptions.map(option => { return { key: option.InternalName, text: option.Title } });
     }
     return this.getCustomCollectionDropDown(options, field, row, updateFunction);
   }

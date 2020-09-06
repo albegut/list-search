@@ -10,6 +10,7 @@ import { ICamlQuery } from "@pnp/sp/lists";
 import { ICamlQueryXml } from '../model/ICamlQueryXml';
 import XMLParser from 'react-xml-parser';
 import { IWeb, Web } from '@pnp/sp/webs';
+import { IListField } from '../model/IListField';
 
 export default class ListService implements IListService {
   private web: IWeb;
@@ -75,9 +76,9 @@ export default class ListService implements IListService {
     }
   }
 
-  public async getListFieldsTitle(listTitle: string): Promise<Array<any>> {
+  public async getListFields(listTitle: string): Promise<Array<IListField>> {
     try {
-      return this.web.lists.getByTitle(listTitle).fields.select('Title').get();
+      return this.web.lists.getByTitle(listTitle).fields.select('Title,InternalName').get();
     } catch (error) {
       return Promise.reject(error);
     }

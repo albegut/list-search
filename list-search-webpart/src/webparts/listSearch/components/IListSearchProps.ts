@@ -31,4 +31,5 @@ export interface IListSearchProps {
   ShowPagination: boolean;
   ItemsInPage: number;
   themeVariant: IReadonlyTheme | undefined;
+  minutesToCache: number;
 }

@@ -22,6 +22,9 @@ import Pagination from "react-js-pagination";
 import { IReadonlyTheme } from '@microsoft/sp-component-base';
 import { IIconProps } from 'office-ui-fabric-react/lib/Icon';
 import { DefaultButton, PrimaryButton } from 'office-ui-fabric-react';
+import { Icon, ITheme } from 'office-ui-fabric-react';
+import SessionStorage from '../services/SessionStorageService';
+import { ISessionStorageElement } from '../model/ISessiongStorageElement';
 
 
 
@@ -49,12 +52,12 @@ export default class ISecondWebPart extends React.Component<IListSearchProps, IL
     if (prevProps != this.props) {
       this.columns = [];
       this.setState({ items: null, filterItems: null, isLoading: true });
-      this.readItems();
+      this.getData(true);
     }
   }
 
   public componentDidMount() {
-    this.readItems();
+    this.getData(false);
   }
 
   private addColumnIfNotExists(columnDisplayName: string, orderColumn: number): void {
@@ -63,23 +66,23 @@ export default class ISecondWebPart extends React.Component<IListSearchProps, IL
     }
   }
 
-  private async readItems() {
-    this.generateKeymap();
-    let itemPromise: Array<Promise<Array<any>>> = [];
+  private async getData(skipCache: boolean) {
     try {
-      Object.keys(this.keymapQuerys).map(site => {
-        let listService: ListService = new ListService(site);
-        let siteProperties = this.props.Sites.filter(siteInformation => siteInformation.url === site);
-        Object.keys(this.keymapQuerys[site]).map(listQuery => {
-          itemPromise.push(listService.getListItems(this.keymapQuerys[site][listQuery], this.props.ListNameTitle, this.props.SiteNameTitle, siteProperties[0][this.props.SiteNamePropertyToShow], this.props.ItemLimit));
-        });
-      });
-
-      let items = await Promise.all(itemPromise);
-      let result = [];
-      items.map(partialResult => {
-        result.push(...partialResult);
-      });
+      let result: any[] = [];
+      if (skipCache) {
+        result = await this.readListsItems();
+      }
+      else {
+        let session: SessionStorage = new SessionStorage();
+        let cacheData: ISessionStorageElement = session.getSotareElementByKey("sharepointData");
+        if (cacheData.hasExpired) {
+          result = await this.readListsItems();
+          session.setSotareElementByKey("sharepointData", result, this.props.minutesToCache);
+        }
+        else {
+          result = cacheData.elements
+        }
+      }
 
       this.setState({
         items: result,
@@ -94,7 +97,29 @@ export default class ISecondWebPart extends React.Component<IListSearchProps, IL
     }
   }
 
+  private async readListsItems(): Promise<Array<any>> {
+    this.generateKeymap();
+    let itemPromise: Array<Promise<Array<any>>> = [];
+
+    Object.keys(this.keymapQuerys).map(site => {
+      let listService: ListService = new ListService(site);
+      let siteProperties = this.props.Sites.filter(siteInformation => siteInformation.url === site);
+      Object.keys(this.keymapQuerys[site]).map(listQuery => {
+        itemPromise.push(listService.getListItems(this.keymapQuerys[site][listQuery], this.props.ListNameTitle, this.props.SiteNameTitle, siteProperties[0][this.props.SiteNamePropertyToShow], this.props.ItemLimit));
+      });
+    });
+
+    let items = await Promise.all(itemPromise);
+    let result = [];
+    items.map(partialResult => {
+      result.push(...partialResult);
+    });
+
+    return result;
+  }
+
   private generateKeymap() {
+    this.keymapQuerys = {};
     this.props.fieldsCollectionData.map(item => {
       if (this.keymapQuerys[item.SiteCollectionSource] != undefined) {
         if (this.keymapQuerys[item.SiteCollectionSource][item.ListSourceField] != undefined) {
@@ -247,6 +272,18 @@ export default class ISecondWebPart extends React.Component<IListSearchProps, IL
     return this.props.IndividualColumnFilter && this.props.IndividualFilterPosition && this.props.IndividualFilterPosition.indexOf(position) > -1;
   }
 
+  private _getItems(): Array<any> {
+    let result = []
+    if (this.state.filterItems) {
+      if (this.props.ShowPagination) {
+        let start = this.props.ItemsInPage * (this.state.activePage - 1);
+        result = this.state.filterItems.slice(start, start + this.props.ItemsInPage);
+      }
+    }
+
+    return result;
+  }
+
 
   public render(): React.ReactElement<IListSearchProps> {
 
@@ -255,7 +292,6 @@ export default class ISecondWebPart extends React.Component<IListSearchProps, IL
 
     let clearAllButton = this.props.ClearAllFiltersBtnColor == "white" ? <DefaultButton text={this.props.ClearAllFiltersBtnText} className={styles.btn} onClick={(ev) => this._clearAllFilters()} /> :
       <PrimaryButton text={this.props.ClearAllFiltersBtnText} className={styles.btn} onClick={(ev) => this._clearAllFilters()} />;
-
     return (
       <div className={styles.listSearch} style={{ backgroundColor: semanticColors.bodyBackground }}>
         <div className={styles.row}>
@@ -278,19 +314,32 @@ export default class ISecondWebPart extends React.Component<IListSearchProps, IL
                   </div>
                   <div className={styles.rowData}>
                     <div className={styles.colData}>
-                      {this.props.ShowItemCount && this.props.ItemCountText.replace("{itemCount}", this.state.filterItems.length.toString())}
-                      <DetailsList items={this.state.filterItems || []} columns={this.columns.sort((prev, next) => prev.data - next.data)}
+                      {this.props.ShowItemCount && <div className={styles.template_resultCount}>{this.props.ItemCountText.replace("{itemCount}", `${this.state.filterItems.length}`)}</div>}
+                      <DetailsList items={this._getItems()} columns={this.columns.sort((prev, next) => prev.data - next.data)}
                         onRenderDetailsFooter={this._checkIndividualFilter("footer") ? (detailsFooterProps) => this._onRenderDetails(detailsFooterProps) : undefined}
                         onRenderDetailsHeader={this._checkIndividualFilter("header") ? (detailsHeaderProps) => this._onRenderDetails(detailsHeaderProps) : undefined}
                         className={styles.searchListData} />
                       {this.props.ShowPagination &&
-                        <Pagination
-                          activePage={this.state.activePage}
-                          itemsCountPerPage={this.props.ItemsInPage}
-                          totalItemsCount={this.state.items ? this.state.items.length : 0}
-                          pageRangeDisplayed={5}
-                          onChange={this.handlePageChange.bind(this)}
-                        />
+                        <div className={styles.paginationContainer}>
+                          <div className={styles.paginationContainer__paginationContainer}>
+                            <div className={`${styles.paginationContainer__paginationContainer__pagination}`}>
+                              <div className={styles.standard}>
+                                <Pagination
+                                  activePage={this.state.activePage}
+                                  firstPageText={<Icon theme={this.props.themeVariant as ITheme} iconName='DoubleChevronLeft' />}
+                                  lastPageText={<Icon theme={this.props.themeVariant as ITheme} iconName='DoubleChevronRight' />}
+                                  prevPageText={<Icon theme={this.props.themeVariant as ITheme} iconName='ChevronLeft' />}
+                                  nextPageText={<Icon theme={this.props.themeVariant as ITheme} iconName='ChevronRight' />}
+                                  activeLinkClass={styles.active}
+                                  itemsCountPerPage={this.props.ItemsInPage}
+                                  totalItemsCount={this.state.items ? this.state.items.length : 0}
+                                  pageRangeDisplayed={5}
+                                  onChange={this.handlePageChange.bind(this)}
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        </div>
                       }
                     </div>
                   </div>
