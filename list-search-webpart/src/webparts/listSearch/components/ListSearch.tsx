@@ -52,35 +52,29 @@ export default class ISecondWebPart extends React.Component<IListSearchProps, IL
     if (prevProps != this.props) {
       this.columns = [];
       this.setState({ items: null, filterItems: null, isLoading: true });
-      this.getData(true);
+      this.getData();
     }
   }
 
   public componentDidMount() {
-    this.getData(false);
+    this.getData();
   }
 
-  private addColumnIfNotExists(columnDisplayName: string, orderColumn: number): void {
-    if (this.columns.filter(column => column.key == columnDisplayName).length == 0) {
-      this.columns.push({ key: columnDisplayName, name: columnDisplayName, fieldName: columnDisplayName, minWidth: 100, maxWidth: 200, isResizable: true, data: orderColumn });
-    }
-  }
-
-  private async getData(skipCache: boolean) {
+  private async getData() {
     try {
       let result: any[] = [];
-      if (skipCache) {
+      if (!this.props.UseLocalStorage) {
         result = await this.readListsItems();
       }
       else {
         let session: SessionStorage = new SessionStorage();
         let cacheData: ISessionStorageElement = session.getSotareElementByKey("sharepointData");
-        if (cacheData.hasExpired) {
+        if (cacheData.hasExpired || !cacheData.elements) {
           result = await this.readListsItems();
           session.setSotareElementByKey("sharepointData", result, this.props.minutesToCache);
         }
         else {
-          result = cacheData.elements
+          result = cacheData.elements;
         }
       }
 
@@ -101,6 +95,9 @@ export default class ISecondWebPart extends React.Component<IListSearchProps, IL
     this.generateKeymap();
     let itemPromise: Array<Promise<Array<any>>> = [];
 
+    //TODO check if it is necessary to generate the columns
+    this.AddColumnsToDisplay();
+
     Object.keys(this.keymapQuerys).map(site => {
       let listService: ListService = new ListService(site);
       let siteProperties = this.props.Sites.filter(siteInformation => siteInformation.url === site);
@@ -116,6 +113,12 @@ export default class ISecondWebPart extends React.Component<IListSearchProps, IL
     });
 
     return result;
+  }
+
+  private AddColumnsToDisplay(): void {
+    this.props.displayFieldsCollectionData.sort().map(column => {
+      this.columns.push({ key: column.ColumnTitle, name: column.ColumnTitle, fieldName: column.ColumnTitle, minWidth: 100, maxWidth: column.ColumnWidth || undefined,  isResizable: true, data: column.Order });
+    })
   }
 
   private generateKeymap() {
@@ -141,23 +144,14 @@ export default class ISecondWebPart extends React.Component<IListSearchProps, IL
         this.keymapQuerys[item.SiteCollectionSource] = {};
         this.keymapQuerys[item.SiteCollectionSource][item.ListSourceField] = newQueryListItem;
       }
-      this.addColumnIfNotExists(item.TargetField, item.Order);
     });
-
-    if (this.props.ShowListName) {
-      this.addColumnIfNotExists(this.props.ListNameTitle, this.props.ListNameOrder || Number.MAX_VALUE);
-    }
-
-    if (this.props.ShowSite) {
-      this.addColumnIfNotExists(this.props.SiteNameTitle, this.props.SiteNameOrder || Number.MAX_VALUE);
-    }
   }
 
   public filterColumnListItems(propertyName: string, propertyValue: string) {
     let isNewFilter: boolean = true;
     let clearFilter: boolean = false;
     let isMoreRestricted: boolean = false;
-    let newFitlers: IColumnFilter[] = this.state.columnFilters.map(filter => {
+    let newFitlers: IColumnFilter[] = this.state.columnFilters.filter(filter => {
       if (filter.columnName === propertyName) {
         isMoreRestricted = filter.filterToApply.length < propertyValue.length;
         filter.filterToApply = propertyValue;
@@ -207,7 +201,7 @@ export default class ISecondWebPart extends React.Component<IListSearchProps, IL
       itemsToFilter.map(item => {
         this.props.GeneralSearcheableFields.map(field => {
           if (filterItems.indexOf(item) < 0) {
-            if (item[field.TargetField] && item[field.TargetField].toString().toLowerCase().indexOf(valueToFilter.toLowerCase()) > -1) {
+            if (item[field.ColumnTitle] && item[field.ColumnTitle].toString().toLowerCase().indexOf(valueToFilter.toLowerCase()) > -1) {
               filterItems.push(item);
               return item;
             }
@@ -273,12 +267,16 @@ export default class ISecondWebPart extends React.Component<IListSearchProps, IL
   }
 
   private _getItems(): Array<any> {
-    let result = []
+    let result = [];
     if (this.state.filterItems) {
       if (this.props.ShowPagination) {
         let start = this.props.ItemsInPage * (this.state.activePage - 1);
         result = this.state.filterItems.slice(start, start + this.props.ItemsInPage);
       }
+      else {
+        result = this.state.filterItems;
+      }
+
     }
 
     return result;

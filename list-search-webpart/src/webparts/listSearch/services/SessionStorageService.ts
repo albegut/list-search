@@ -18,7 +18,7 @@ export default class SessionStorage implements ISessionStorage {
     const sessionElement = storage.session.get(key);
     const currentTimeStamp = new Date().getTime();
     if (sessionElement) {
-      return { hasExpired: currentTimeStamp > sessionElement.expirationTime, elements: sessionElement.value }
+      return { hasExpired: false, elements: sessionElement }
 
     }
     else {

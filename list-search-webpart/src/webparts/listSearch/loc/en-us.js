@@ -27,7 +27,7 @@ define([], function() {
     CollectionDataFieldsTargetField:"Target field name",
     CollectionDataFieldsOrder:"Order",
     CollectionDataFieldsSearchable:"Searcheable in general filter",
-    GeneralFieldsPropertiesGroup:"General fields",
+    DisplayFieldsPropertiesGroup:"Display Fields",
     GeneralFieldsPropertiesShowListName:"Show list title",
     GeneralFieldsPropertiesShowSiteInformation:"Show site information",
     FilterPropertiesGroup:"Filters",

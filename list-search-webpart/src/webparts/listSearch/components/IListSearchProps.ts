@@ -1,24 +1,22 @@
 import { WebPartContext } from "@microsoft/sp-webpart-base";
-import { IListFieldData, IListData } from "../model/IListConfigProps";
+import { IListFieldData, IListData, IDisplayFieldData } from "../model/IListConfigProps";
 import { IPropertyFieldSite, } from '@pnp/spfx-property-controls/lib/PropertyFieldSitePicker';
 import { IReadonlyTheme } from '@microsoft/sp-component-base';
 
 
 export interface IListSearchProps {
   Context: WebPartContext;
+  displayFieldsCollectionData: Array<IDisplayFieldData>
   fieldsCollectionData: Array<IListFieldData>;
-  listsCollectionData : Array<IListData>;
+  listsCollectionData: Array<IListData>;
   ShowListName: boolean;
   ListNameTitle: string;
-  ListNameOrder: number;
   ShowSite: boolean;
   SiteNameTitle: string;
-  SiteNameOrder: number;
-  SiteNameSearcheable: boolean;
   SiteNamePropertyToShow: string;
   GeneralFilter: boolean;
   GeneralFilterPlaceHolderText: string;
-  GeneralSearcheableFields: Array<IListFieldData>;
+  GeneralSearcheableFields: Array<IDisplayFieldData>;
   IndividualColumnFilter: boolean;
   IndividualFilterPosition: string[];
   ShowClearAllFilters: boolean;
@@ -31,5 +29,6 @@ export interface IListSearchProps {
   ShowPagination: boolean;
   ItemsInPage: number;
   themeVariant: IReadonlyTheme | undefined;
+  UseLocalStorage: boolean;
   minutesToCache: number;
 }

@@ -26,7 +26,7 @@ declare interface IListSearchWebPartStrings {
   CollectionDataFieldsTargetField:string;
   CollectionDataFieldsOrder:string;
   CollectionDataFieldsSearchable:string;
-  GeneralFieldsPropertiesGroup:string;
+  DisplayFieldsPropertiesGroup:string;
   GeneralFieldsPropertiesShowListName:string;
   GeneralFieldsPropertiesShowSiteInformation:string;
   FilterPropertiesGroup:string;

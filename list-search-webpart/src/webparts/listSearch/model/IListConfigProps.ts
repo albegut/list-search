@@ -1,15 +1,22 @@
-export interface IListFieldData{
+export interface IListFieldData {
   SiteCollectionSource: string;
   ListSourceField: string;
   SourceField: string;
   TargetField: string;
-  Order: number;
-  Searcheable: boolean;
 }
 
-export interface IListData{
+export interface IListData {
   SiteCollectionSource: string;
   ListSourceField: string;
   ListView: string;
   Query: string;
+}
+
+export interface IDisplayFieldData {
+  IsSiteTitle: boolean;
+  IsListTitle: boolean;
+  ColumnTitle: string;
+  ColumnWidth?: number;
+  Order: number;
+  Searcheable: boolean;
 }
