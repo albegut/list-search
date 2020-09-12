@@ -74,6 +74,7 @@ export default class ISecondWebPart extends React.Component<IListSearchProps, IL
           session.setSotareElementByKey("sharepointData", result, this.props.minutesToCache);
         }
         else {
+          this.AddColumnsToDisplay();
           result = cacheData.elements;
         }
       }
