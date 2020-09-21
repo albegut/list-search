@@ -295,354 +295,354 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
 
   private getDistinctSiteCollectionSourceOptions(): IDropdownOption[] {
     let options: IDropdownOption[] = [];
-    let siteOptions = this.properties.listsCollectionData.map(option => option.SiteCollectionSource);
-    siteOptions.map((item, index, array) => {
-      if (array.indexOf(item) == index) {
-        options.push({
-          key: item,
-          text: item
-        });
-      }
-    });
+    let siteOptions = this.properties.listsCollectionData && this.properties.listsCollectionData.map(option => option.SiteCollectionSource);
+    if (siteOptions) {
+      siteOptions.map((item, index, array) => {
+        if (array.indexOf(item) == index) {
+          options.push({
+            key: item,
+            text: item
+          });
+        }
+      });
+    }
 
     return options;
   }
 
 
   protected getPropertyPaneConfiguration(): IPropertyPaneConfiguration {
-    try {
-      let SiteTitleOptions: IPropertyPaneDropdownOption[] = [];
-      SiteTitleOptions.push({ key: "id", text: "Id" });
-      SiteTitleOptions.push({ key: "title", text: "Title" });
-      SiteTitleOptions.push({ key: "url", text: "Url" });
 
-      let emptyProperty = new EmptyPropertyPane();
+    let SiteTitleOptions: IPropertyPaneDropdownOption[] = [];
+    SiteTitleOptions.push({ key: "id", text: "Id" });
+    SiteTitleOptions.push({ key: "title", text: "Title" });
+    SiteTitleOptions.push({ key: "url", text: "Url" });
 
-      let SiteNamePropertyToShowPropertyPane = this.properties.ShowSiteTitle ? PropertyPaneDropdown('SiteNamePropertyToShow', {
-        label: strings.GeneralFieldsPropertiesSiteProperty,
-        disabled: !this.properties.ShowSiteTitle,
-        options: SiteTitleOptions
-      }) : emptyProperty;
+    let emptyProperty = new EmptyPropertyPane();
 
-      let GeneralFilterPlaceHolderPropertyPane = this.properties.GeneralFilter ? PropertyPaneTextField('GeneralFilterPlaceHolderText', {
-        label: strings.FilterPropertiesGeneralFilterPlaceHolder,
-      }) : emptyProperty;
+    let SiteNamePropertyToShowPropertyPane = this.properties.ShowSiteTitle ? PropertyPaneDropdown('SiteNamePropertyToShow', {
+      label: strings.GeneralFieldsPropertiesSiteProperty,
+      disabled: !this.properties.ShowSiteTitle,
+      options: SiteTitleOptions
+    }) : emptyProperty;
 
-      let IndividualFilterPositionPropertyPane = this.properties.IndividualColumnFilter ? PropertyFieldMultiSelect('IndividualFilterPosition', {
-        key: 'multiSelect',
-        label: strings.FilterPropertiesIndividualFilterPostion,
-        options: [
-          {
-            key: "header",
-            text: "Header"
+    let GeneralFilterPlaceHolderPropertyPane = this.properties.GeneralFilter ? PropertyPaneTextField('GeneralFilterPlaceHolderText', {
+      label: strings.FilterPropertiesGeneralFilterPlaceHolder,
+    }) : emptyProperty;
+
+    let IndividualFilterPositionPropertyPane = this.properties.IndividualColumnFilter ? PropertyFieldMultiSelect('IndividualFilterPosition', {
+      key: 'multiSelect',
+      label: strings.FilterPropertiesIndividualFilterPostion,
+      options: [
+        {
+          key: "header",
+          text: "Header"
+        },
+        {
+          key: "footer",
+          text: "Footer"
+        },
+      ],
+      selectedKeys: this.properties.IndividualFilterPosition
+    }) : emptyProperty;
+
+    let ClearAlFiltersBtnTextPropertyPane = this.properties.ShowClearAllFilters ? PropertyPaneTextField('ClearAllFiltersBtnText', {
+      label: strings.FilterPropertiesClearAllBtnText,
+    }) : emptyProperty;
+
+    let clearAllFiltersBtnColorOptions: IPropertyPaneDropdownOption[] = [];
+    clearAllFiltersBtnColorOptions.push({ key: "white", text: "White" });
+    clearAllFiltersBtnColorOptions.push({ key: "theme", text: "Theme" });
+    let ClearAlFiltersBtnColorPropertyPane = this.properties.ShowClearAllFilters ? PropertyPaneDropdown('ClearAllFiltersBtnColor', {
+      label: strings.FilterPropertiesClearAllBtnColor,
+      options: clearAllFiltersBtnColorOptions
+    }) : emptyProperty;
+
+    let ItemCountTextFieldPropertyPane = this.properties.ShowItemCount ? PropertyPaneTextField('ItemCountText', {
+      label: strings.GeneralPropertiesItemCountText,
+      placeholder: strings.GeneralPropertiesItemCountPlaceholder
+    }) : emptyProperty;
+
+    let ItemsInPagePropertyPane = this.properties.ShowPagination ? PropertyFieldNumber("ItemsInPage", {
+      key: "ItemsInPage",
+      label: strings.GeneralPropertiesItemPerPage,
+      value: this.properties.ItemsInPage || null,
+    }) : emptyProperty;
+
+    let cacheeTimePropertyPane = this.properties.UseLocalStorage ? PropertyFieldNumber("minutesToCache", {
+      key: "minutesToCache",
+      label: "SS",
+      value: this.properties.minutesToCache || null,
+    }) : emptyProperty;
+
+    return {
+      pages: [
+        {
+          header: {
+            description: strings.PropertyPaneDescription
           },
-          {
-            key: "footer",
-            text: "Footer"
-          },
-        ],
-        selectedKeys: this.properties.IndividualFilterPosition
-      }) : emptyProperty;
-
-      let ClearAlFiltersBtnTextPropertyPane = this.properties.ShowClearAllFilters ? PropertyPaneTextField('ClearAllFiltersBtnText', {
-        label: strings.FilterPropertiesClearAllBtnText,
-      }) : emptyProperty;
-
-      let clearAllFiltersBtnColorOptions: IPropertyPaneDropdownOption[] = [];
-      clearAllFiltersBtnColorOptions.push({ key: "white", text: "White" });
-      clearAllFiltersBtnColorOptions.push({ key: "theme", text: "Theme" });
-      let ClearAlFiltersBtnColorPropertyPane = this.properties.ShowClearAllFilters ? PropertyPaneDropdown('ClearAllFiltersBtnColor', {
-        label: strings.FilterPropertiesClearAllBtnColor,
-        options: clearAllFiltersBtnColorOptions
-      }) : emptyProperty;
-
-      let ItemCountTextFieldPropertyPane = this.properties.ShowItemCount ? PropertyPaneTextField('ItemCountText', {
-        label: strings.GeneralPropertiesItemCountText,
-        placeholder: strings.GeneralPropertiesItemCountPlaceholder
-      }) : emptyProperty;
-
-      let ItemsInPagePropertyPane = this.properties.ShowPagination ? PropertyFieldNumber("ItemsInPage", {
-        key: "ItemsInPage",
-        label: strings.GeneralPropertiesItemPerPage,
-        value: this.properties.ItemsInPage || null,
-      }) : emptyProperty;
-
-      let cacheeTimePropertyPane = this.properties.UseLocalStorage ? PropertyFieldNumber("minutesToCache", {
-        key: "minutesToCache",
-        label: "SS",
-        value: this.properties.minutesToCache || null,
-      }) : emptyProperty;
-
-      return {
-        pages: [
-          {
-            header: {
-              description: strings.PropertyPaneDescription
-            },
-            displayGroupsAsAccordion: true,
-            groups: [
-              {
-                groupName: strings.SourceSelectorGroup,
-                isCollapsed: true,
-                groupFields: [
-                  PropertyFieldSitePicker('sites', {
-                    label: strings.SitesSelector,
-                    initialSites: this.properties.sites || [],
-                    context: this.context,
-                    multiSelect: true,
-                    onPropertyChange: (propertyPath, oldValue, newValue) => this.onPropertyPaneFieldChanged(propertyPath, oldValue, newValue, this.sitesLists, this.saveSiteCollectionLists),
-                    properties: this.properties,
-                    key: 'sitesFieldId',
-                  }),
-                  PropertyFieldCollectionData("listsCollectionData", {
-                    key: "listsCollectionData",
-                    label: strings.ListSelector,
-                    panelHeader: strings.ListSelectorPanelHeader,
-                    manageBtnLabel: strings.ListSelectorLabel,
-                    value: this.properties.listsCollectionData,
-                    fields: [
-                      {
-                        id: "SiteCollectionSource",
-                        title: strings.CollectionDataSiteCollectionTitle,
-                        type: CustomCollectionFieldType.dropdown,
-                        options: this.properties.sites && this.properties.sites.map(site => {
-                          return {
-                            key: site.url,
-                            text: site.url
-                          };
-                        }),
-                        required: true,
-                      },
-                      {
-                        id: "ListSourceField",
-                        title: strings.CollectionDataListTitle,
-                        type: CustomCollectionFieldType.custom,
-                        required: true,
-                        onCustomRender: (field, value, onUpdate, item, itemId, onError) => {
-                          if (item.SiteCollectionSource) {
-                            return (
-                              CustomCollectionDataField.getListPickerBySite(this.sitesLists[item.SiteCollectionSource], field, item, onUpdate, this.setNewListFieds)
-                            );
-                          }
-                        }
-                      },
-                      {
-                        id: "ListView",
-                        title: strings.CollectionDataListViewNameTitle,
-                        type: CustomCollectionFieldType.string,
-
-                      },
-                      {
-                        id: "Query",
-                        title: strings.CollectionDataListCamlQueryTitle,
-                        placeholder: strings.CollectionDataListCamlQueryPlaceHolder,
-                        type: CustomCollectionFieldType.string,
-                      }
-                    ],
-                    disabled: !this.properties.sites || this.properties.sites.length == 0,
-                  })
-                ]
-              },
-              {
-                groupName: strings.GeneralPropertiesGroup,
-                isCollapsed: true,
-                groupFields: [
-                  PropertyPaneToggle('ShowItemCount', {
-                    label: strings.GeneralPropertiesShowItemCount,
-                  }),
-                  ItemCountTextFieldPropertyPane,
-                  PropertyFieldNumber("ItemLimit", {
-                    key: "ItemLimit",
-                    label: strings.GeneralPropertiesRowLimitLabel,
-                    description: strings.GeneralPropertiesRowLimitDescription,
-                    value: this.properties.ItemLimit || null,
-                  }),
-                  PropertyPaneToggle('ShowPagination', {
-                    label: strings.GeneralPropertiesShowPagination,
-                  }),
-                  ItemsInPagePropertyPane
-                ]
-              }
-
-            ]
-          },
-          {
-            header: {
-              description: strings.FieldPropertiesGroup
-            },
-            displayGroupsAsAccordion: true,
-            groups: [
-              {
-                groupName: strings.DisplayFieldsPropertiesGroup,
-                isCollapsed: true,
-                groupFields: [
-                  PropertyPaneToggle('ShowListName', {
-                    label: strings.GeneralFieldsPropertiesShowListName,
-                    disabled: !this.properties.sites || this.properties.sites.length == 0,
-                    checked: !!this.properties.sites && this.properties.sites.length > 0 && this.properties.ShowListName,
-                  }),
-                  PropertyPaneToggle('ShowSiteTitle', {
-                    label: strings.GeneralFieldsPropertiesShowSiteInformation,
-                    disabled: !this.properties.sites || this.properties.sites.length == 0,
-                    checked: !!this.properties.sites && this.properties.sites.length > 0 && this.properties.ShowSiteTitle
-                  }),
-                  SiteNamePropertyToShowPropertyPane,
-                  PropertyFieldCollectionData("displayFieldsCollectionData", {
-                    key: "displayFieldsCollectionData",
-                    label: "AA",
-                    panelHeader: "BB",
-                    manageBtnLabel: "CC",
-                    value: this.properties.displayFieldsCollectionData,
-                    fields: [
-                      {
-                        id: "ColumnTitle",
-                        title: "Column Title",
-                        type: CustomCollectionFieldType.string,
-                        required: true,
-                      },
-                      {
-                        id: "Order",
-                        title: strings.CollectionDataFieldsOrder,
-                        type: CustomCollectionFieldType.number,
-                        required: true
-                      },
-                      {
-                        id: "ColumnWidth",
-                        title: "Column Width",
-                        type: CustomCollectionFieldType.number,
-                      },
-                      {
-                        id: "IsSiteTitle",
-                        title: "IsSiteTitleColumn",
-                        type: CustomCollectionFieldType.boolean,
-                        disableEdit: true,
-                      },
-                      {
-                        id: "IsListTitle",
-                        title: "IsListTitleColumn",
-                        type: CustomCollectionFieldType.boolean,
-                        disableEdit: true,
-                      },
-                      {
-                        id: "Searcheable",
-                        title: strings.CollectionDataFieldsSearchable,
-                        type: CustomCollectionFieldType.boolean,
-                        defaultValue: true
-                      }
-                    ],
-                  })
-                ]
-              },
-              {
-                groupName: strings.CollectionDataFieldsProperties,
-                isCollapsed: true,
-                groupFields: [
-                  PropertyFieldCollectionData("fieldCollectionData", {
-                    key: "fieldCollectionData",
-                    label: strings.CollectionDataFieldsToRetreive,
-                    panelHeader: strings.CollectionDataFieldsHeader,
-                    manageBtnLabel: strings.CollectionDataFieldsSelectBtn,
-                    value: this.properties.fieldCollectionData,
-                    fields: [
-                      {
-                        id: "SiteCollectionSource",
-                        title: strings.CollectionDataFieldsSiteCollection,
-                        type: CustomCollectionFieldType.dropdown,
-                        options: this.getDistinctSiteCollectionSourceOptions(),
-                        required: true
-                      },
-                      {
-                        id: "ListSourceField",
-                        title: strings.CollectionDataFieldsList,
-                        type: CustomCollectionFieldType.custom,
-                        required: true,
-                        onCustomRender: (field, value, onUpdate, item, itemId, onError) => {
+          displayGroupsAsAccordion: true,
+          groups: [
+            {
+              groupName: strings.SourceSelectorGroup,
+              isCollapsed: true,
+              groupFields: [
+                PropertyFieldSitePicker('sites', {
+                  label: strings.SitesSelector,
+                  initialSites: this.properties.sites || [],
+                  context: this.context,
+                  multiSelect: true,
+                  onPropertyChange: (propertyPath, oldValue, newValue) => this.onPropertyPaneFieldChanged(propertyPath, oldValue, newValue, this.sitesLists, this.saveSiteCollectionLists),
+                  properties: this.properties,
+                  key: 'sitesFieldId',
+                }),
+                PropertyFieldCollectionData("listsCollectionData", {
+                  key: "listsCollectionData",
+                  label: strings.ListSelector,
+                  panelHeader: strings.ListSelectorPanelHeader,
+                  manageBtnLabel: strings.ListSelectorLabel,
+                  value: this.properties.listsCollectionData,
+                  fields: [
+                    {
+                      id: "SiteCollectionSource",
+                      title: strings.CollectionDataSiteCollectionTitle,
+                      type: CustomCollectionFieldType.dropdown,
+                      options: this.properties.sites && this.properties.sites.map(site => {
+                        return {
+                          key: site.url,
+                          text: site.url
+                        };
+                      }),
+                      required: true,
+                    },
+                    {
+                      id: "ListSourceField",
+                      title: strings.CollectionDataListTitle,
+                      type: CustomCollectionFieldType.custom,
+                      required: true,
+                      onCustomRender: (field, value, onUpdate, item, itemId, onError) => {
+                        if (item.SiteCollectionSource) {
                           return (
-                            CustomCollectionDataField.getListPickerBySiteOptions(this.properties.listsCollectionData, field, item, onUpdate)
+                            CustomCollectionDataField.getListPickerBySite(this.sitesLists[item.SiteCollectionSource], field, item, onUpdate, this.setNewListFieds)
                           );
                         }
-                      },
-                      {
-                        id: "SourceField",
-                        title: strings.CollectionDataFieldsListField,
-                        type: CustomCollectionFieldType.custom,
-                        required: true,
-                        onCustomRender: (field, value, onUpdate, item, itemId, onError) => {
-                          if (item.SiteCollectionSource && item.ListSourceField) {
-                            return (
-                              CustomCollectionDataField.getFieldPickerByList(this.ListsFields[item.SiteCollectionSource][item.ListSourceField], field, item, onUpdate)
-                            );
-                          }
-                        }
-                      },
-                      {
-                        id: "TargetField",
-                        title: strings.CollectionDataFieldsTargetField,
-                        type: CustomCollectionFieldType.dropdown,
-                        options: this.properties.displayFieldsCollectionData && this.properties.displayFieldsCollectionData.filter(field => !field.IsListTitle && !field.IsSiteTitle).map(field => {
-                            return {
-                            key: field.ColumnTitle,
-                            text: field.ColumnTitle
-                          };
-
-                        }),
-                        required: true
                       }
-                    ],
-                    disabled: !this.properties.sites || this.properties.sites.length == 0 || !this.properties.displayFieldsCollectionData || this.properties.displayFieldsCollectionData.length == 0,
+                    },
+                    {
+                      id: "ListView",
+                      title: strings.CollectionDataListViewNameTitle,
+                      type: CustomCollectionFieldType.string,
 
-                  })]
-              }
-            ]
-          },
-          {
-            header: {
-              description: strings.FilterPropertiesGroup
+                    },
+                    {
+                      id: "Query",
+                      title: strings.CollectionDataListCamlQueryTitle,
+                      placeholder: strings.CollectionDataListCamlQueryPlaceHolder,
+                      type: CustomCollectionFieldType.string,
+                    }
+                  ],
+                  disabled: !this.properties.sites || this.properties.sites.length == 0,
+                })
+              ]
             },
-            displayGroupsAsAccordion: true,
-            groups: [
-              {
-                groupName: strings.FilterPropertiesGroupName,
-                isCollapsed: true,
-                groupFields: [
-                  PropertyPaneToggle('GeneralFilter', {
-                    label: strings.FilterPropertiesGeneralFilter,
-                    checked: this.properties.GeneralFilter
-                  }),
-                  GeneralFilterPlaceHolderPropertyPane
-                  ,
-                  PropertyPaneToggle('IndividualColumnFilter', {
-                    label: strings.FilterPropertiesIndividualFilter,
-                    checked: this.properties.IndividualColumnFilter
-                  }),
-                  IndividualFilterPositionPropertyPane,
-                  PropertyPaneToggle('ShowClearAllFilters', {
-                    label: strings.FilterPropertiesClearAllBtn,
-                    checked: this.properties.ShowClearAllFilters
-                  }),
-                  ClearAlFiltersBtnColorPropertyPane,
-                  ClearAlFiltersBtnTextPropertyPane
-                ],
-              },
-              {
-                groupName: "DD",
-                isCollapsed: true,
-                groupFields: [
-                  PropertyPaneToggle('UseLocalStorage', {
-                    label: "RR",
-                    checked: this.properties.UseLocalStorage
-                  }),
-                  cacheeTimePropertyPane
-                ],
-              }
-            ]
-          }
-        ]
-      };
-    }
-    catch (error) {
-      console.error(error);
-    }
+            {
+              groupName: strings.GeneralPropertiesGroup,
+              isCollapsed: true,
+              groupFields: [
+                PropertyPaneToggle('ShowItemCount', {
+                  label: strings.GeneralPropertiesShowItemCount,
+                }),
+                ItemCountTextFieldPropertyPane,
+                PropertyFieldNumber("ItemLimit", {
+                  key: "ItemLimit",
+                  label: strings.GeneralPropertiesRowLimitLabel,
+                  description: strings.GeneralPropertiesRowLimitDescription,
+                  value: this.properties.ItemLimit || null,
+                }),
+                PropertyPaneToggle('ShowPagination', {
+                  label: strings.GeneralPropertiesShowPagination,
+                }),
+                ItemsInPagePropertyPane
+              ]
+            }
+
+          ]
+        },
+        {
+          header: {
+            description: strings.FieldPropertiesGroup
+          },
+          displayGroupsAsAccordion: true,
+          groups: [
+            {
+              groupName: strings.DisplayFieldsPropertiesGroup,
+              isCollapsed: true,
+              groupFields: [
+                PropertyPaneToggle('ShowListName', {
+                  label: strings.GeneralFieldsPropertiesShowListName,
+                  disabled: !this.properties.sites || this.properties.sites.length == 0,
+                  checked: !!this.properties.sites && this.properties.sites.length > 0 && this.properties.ShowListName,
+                }),
+                PropertyPaneToggle('ShowSiteTitle', {
+                  label: strings.GeneralFieldsPropertiesShowSiteInformation,
+                  disabled: !this.properties.sites || this.properties.sites.length == 0,
+                  checked: !!this.properties.sites && this.properties.sites.length > 0 && this.properties.ShowSiteTitle
+                }),
+                SiteNamePropertyToShowPropertyPane,
+                PropertyFieldCollectionData("displayFieldsCollectionData", {
+                  enableSorting: true,
+                  key: "displayFieldsCollectionData",
+                  label: "AA",
+                  panelHeader: "BB",
+                  manageBtnLabel: "CC",
+                  value: this.properties.displayFieldsCollectionData,
+                  fields: [
+                    {
+                      id: "ColumnTitle",
+                      title: "Column Title",
+                      type: CustomCollectionFieldType.string,
+                      required: true,
+                    },
+                    {
+                      id: "Order",
+                      title: strings.CollectionDataFieldsOrder,
+                      type: CustomCollectionFieldType.number,
+                      required: true
+                    },
+                    {
+                      id: "ColumnWidth",
+                      title: "Column Width",
+                      type: CustomCollectionFieldType.number,
+                    },
+                    {
+                      id: "IsSiteTitle",
+                      title: "IsSiteTitleColumn",
+                      type: CustomCollectionFieldType.boolean,
+                      disableEdit: true,
+                    },
+                    {
+                      id: "IsListTitle",
+                      title: "IsListTitleColumn",
+                      type: CustomCollectionFieldType.boolean,
+                      disableEdit: true,
+                    },
+                    {
+                      id: "Searcheable",
+                      title: strings.CollectionDataFieldsSearchable,
+                      type: CustomCollectionFieldType.boolean,
+                      defaultValue: true
+                    }
+                  ],
+                })
+              ]
+            },
+            {
+              groupName: strings.CollectionDataFieldsProperties,
+              isCollapsed: true,
+              groupFields: [
+                PropertyFieldCollectionData("fieldCollectionData", {
+                  key: "fieldCollectionData",
+                  label: strings.CollectionDataFieldsToRetreive,
+                  panelHeader: strings.CollectionDataFieldsHeader,
+                  manageBtnLabel: strings.CollectionDataFieldsSelectBtn,
+                  value: this.properties.fieldCollectionData,
+                  fields: [
+                    {
+                      id: "SiteCollectionSource",
+                      title: strings.CollectionDataFieldsSiteCollection,
+                      type: CustomCollectionFieldType.dropdown,
+                      options: this.getDistinctSiteCollectionSourceOptions(),
+                      required: true
+                    },
+                    {
+                      id: "ListSourceField",
+                      title: strings.CollectionDataFieldsList,
+                      type: CustomCollectionFieldType.custom,
+                      required: true,
+                      onCustomRender: (field, value, onUpdate, item, itemId, onError) => {
+                        return (
+                          CustomCollectionDataField.getListPickerBySiteOptions(this.properties.listsCollectionData, field, item, onUpdate)
+                        );
+                      }
+                    },
+                    {
+                      id: "SourceField",
+                      title: strings.CollectionDataFieldsListField,
+                      type: CustomCollectionFieldType.custom,
+                      required: true,
+                      onCustomRender: (field, value, onUpdate, item, itemId, onError) => {
+                        if (item.SiteCollectionSource && item.ListSourceField) {
+                          return (
+                            CustomCollectionDataField.getFieldPickerByList(this.ListsFields[item.SiteCollectionSource][item.ListSourceField], field, item, onUpdate)
+                          );
+                        }
+                      }
+                    },
+                    {
+                      id: "TargetField",
+                      title: strings.CollectionDataFieldsTargetField,
+                      type: CustomCollectionFieldType.dropdown,
+                      options: this.properties.displayFieldsCollectionData && this.properties.displayFieldsCollectionData.filter(field => !field.IsListTitle && !field.IsSiteTitle).map(field => {
+                        return {
+                          key: field.ColumnTitle,
+                          text: field.ColumnTitle
+                        };
+
+                      }),
+                      required: true
+                    }
+                  ],
+                  disabled: !this.properties.sites || this.properties.sites.length == 0 || !this.properties.displayFieldsCollectionData || this.properties.displayFieldsCollectionData.length == 0,
+
+                })]
+            }
+          ]
+        },
+        {
+          header: {
+            description: strings.FilterPropertiesGroup
+          },
+          displayGroupsAsAccordion: true,
+          groups: [
+            {
+              groupName: strings.FilterPropertiesGroupName,
+              isCollapsed: true,
+              groupFields: [
+                PropertyPaneToggle('GeneralFilter', {
+                  label: strings.FilterPropertiesGeneralFilter,
+                  checked: this.properties.GeneralFilter
+                }),
+                GeneralFilterPlaceHolderPropertyPane
+                ,
+                PropertyPaneToggle('IndividualColumnFilter', {
+                  label: strings.FilterPropertiesIndividualFilter,
+                  checked: this.properties.IndividualColumnFilter
+                }),
+                IndividualFilterPositionPropertyPane,
+                PropertyPaneToggle('ShowClearAllFilters', {
+                  label: strings.FilterPropertiesClearAllBtn,
+                  checked: this.properties.ShowClearAllFilters
+                }),
+                ClearAlFiltersBtnColorPropertyPane,
+                ClearAlFiltersBtnTextPropertyPane
+              ],
+            },
+            {
+              groupName: "DD",
+              isCollapsed: true,
+              groupFields: [
+                PropertyPaneToggle('UseLocalStorage', {
+                  label: "RR",
+                  checked: this.properties.UseLocalStorage
+                }),
+                cacheeTimePropertyPane
+              ],
+            }
+          ]
+        }
+      ]
+    };
+
   }
 
   private saveSiteCollectionLists(site: string, Lists: string[]) {
