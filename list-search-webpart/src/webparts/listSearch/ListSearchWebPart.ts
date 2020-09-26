@@ -13,7 +13,7 @@ import { PropertyFieldCollectionData, CustomCollectionFieldType } from '@pnp/spf
 import { IListSearchProps } from './components/IListSearchProps';
 import ListSearch from './components/ListSearch';
 import * as strings from 'ListSearchWebPartStrings';
-import { IListFieldData, IListData, IDisplayFieldData } from './model/IListConfigProps';
+import { IListFieldData, IListData, IDisplayFieldData, ICompleteModalData, IRedirectData } from './model/IListConfigProps';
 import { PropertyFieldSitePicker, IPropertyFieldSite, } from '@pnp/spfx-property-controls/lib/PropertyFieldSitePicker';
 import { PropertyFieldNumber } from '@pnp/spfx-property-controls/lib/PropertyFieldNumber';
 import { Placeholder } from "@pnp/spfx-controls-react/lib/Placeholder";
@@ -57,6 +57,15 @@ export interface IListSearchWebPartProps {
   ItemsInPage: number;
   UseLocalStorage: boolean;
   minutesToCache: number;
+  onClickSelectedOption: string;
+  clickEnabled: boolean;
+  clickIsSimpleModal: boolean;
+  clickIsCompleteModal: boolean;
+  clickIsRedirect: boolean;
+  clickIsDynamicData: boolean;
+  completeModalFields: Array<ICompleteModalData>;
+  redirectData: Array<IRedirectData>;
+  onRedirectIdQuery: string;
 }
 
 export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearchWebPartProps> {
@@ -168,6 +177,9 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
       renderElement = placeholder;
     }
     else {
+      if (this.properties.clickEnabled) {
+        this.setSelectedOnClickOption(this.properties.onClickSelectedOption);
+      }
       let sercheableFields = this.properties.displayFieldsCollectionData.filter(fieldData => { if (fieldData.Searcheable) return fieldData.ColumnTitle; });
 
       if (this.properties.ShowListName) {
@@ -207,6 +219,14 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
           themeVariant: this._themeVariant,
           UseLocalStorage: this.properties.UseLocalStorage,
           minutesToCache: this.properties.minutesToCache,
+          clickEnabled: this.properties.clickEnabled,
+          clickIsSimpleModal: this.properties.clickIsSimpleModal,
+          clickIsCompleteModal: this.properties.clickIsCompleteModal,
+          clickIsRedirect: this.properties.clickIsRedirect,
+          clickIsDynamicData: this.properties.clickIsDynamicData,
+          completeModalFields: this.properties.completeModalFields,
+          redirectData: this.properties.redirectData,
+          onRedirectIdQuery: this.properties.onRedirectIdQuery,
         }
       );
       renderElement = element;
@@ -240,7 +260,7 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
           }
           else {
             if (!this.properties.displayFieldsCollectionData.some(field => field.IsListTitle)) {
-              this.properties.displayFieldsCollectionData.push({ ColumnTitle: "ListName", IsListTitle: true, IsSiteTitle: false, Order: 1, Searcheable: true })
+              this.properties.displayFieldsCollectionData.push({ ColumnTitle: "ListName", IsListTitle: true, IsSiteTitle: false, Searcheable: true })
             }
           }
           break;
@@ -253,7 +273,7 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
           }
           else {
             if (!this.properties.displayFieldsCollectionData.some(field => field.IsSiteTitle)) {
-              this.properties.displayFieldsCollectionData.push({ ColumnTitle: "Site", IsListTitle: false, IsSiteTitle: true, Order: 1, Searcheable: true })
+              this.properties.displayFieldsCollectionData.push({ ColumnTitle: "Site", IsListTitle: false, IsSiteTitle: true, Searcheable: true })
             }
           }
           break;
@@ -268,7 +288,6 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
         }
       case "sites":
         {
-
           if (newValue && oldValue) {
             if (newValue.length > 0 && oldValue.length < newValue.length) {
               await newValue.map(async site => {
@@ -288,8 +307,50 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
               });
             }
           }
+          break;
         }
-        break;
+      case "onClickSelectedOption":
+        {
+          this.properties.clickIsSimpleModal = false;
+          this.properties.clickIsCompleteModal = false;
+          this.properties.clickIsRedirect = false;
+          this.properties.clickIsDynamicData = false;
+          this.setSelectedOnClickOption(newValue);
+
+          break;
+        }
+
+    }
+  }
+
+  private setSelectedOnClickOption(newValue: string) {
+    switch (newValue) {
+      case "simpleModal":
+        {
+          this.properties.clickIsSimpleModal = true;
+          this.properties.redirectData = undefined;
+          this.properties.completeModalFields = undefined;
+          break;
+        }
+      case "completeModal":
+        {
+          this.properties.clickIsCompleteModal = true;
+          this.properties.redirectData = undefined;
+          break;
+        }
+      case "redirect":
+        {
+          this.properties.clickIsRedirect = true;
+          this.properties.completeModalFields = undefined;
+          break;
+        }
+      case "dynamicData":
+        {
+          this.properties.clickIsDynamicData = true;
+          this.properties.redirectData = undefined;
+          this.properties.completeModalFields = undefined;
+          break;
+        }
     }
   }
 
@@ -367,12 +428,129 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
       key: "ItemsInPage",
       label: strings.GeneralPropertiesItemPerPage,
       value: this.properties.ItemsInPage || null,
+      onGetErrorMessage: (value: number) => {
+        if (!value) {
+          return "If pagination are enabled, items per page are required";
+        }
+        if (value < 0) {
+          return 'Only positive values are allowed';
+        }
+        return '';
+      }
     }) : emptyProperty;
 
-    let cacheeTimePropertyPane = this.properties.UseLocalStorage ? PropertyFieldNumber("minutesToCache", {
+    let cacheTimePropertyPane = this.properties.UseLocalStorage ? PropertyFieldNumber("minutesToCache", {
       key: "minutesToCache",
-      label: "SS",
+      label: strings.MinutesToCacheData,
       value: this.properties.minutesToCache || null,
+    }) : emptyProperty;
+
+    let onclickEventOptionPropertyPane = this.properties.clickEnabled ? PropertyPaneDropdown('onClickSelectedOption', {
+      label: strings.OnClickOptionsToSelect,
+      selectedKey: this.properties.onClickSelectedOption || "simpleModal",
+      options: [
+        {
+          key: "simpleModal",
+          text: strings.OnClickSimpleModalText
+        },
+        {
+          key: "completeModal",
+          text: strings.OnClickCompleteModalText
+        },
+        {
+          key: "redirect",
+          text: strings.OnClickRedirectText
+        },
+        {
+          key: "dynamicData",
+          text: strings.OnClickDynamicText
+        }
+      ],
+    }) : emptyProperty;
+
+    let onClickCompleteModalPropertyPane = this.properties.clickIsCompleteModal ? PropertyFieldCollectionData("completeModalFields", {
+      key: "completeModalFields",
+      label: strings.CompleteModalFieldSelector,
+      panelHeader: strings.CompleteModalHeaderSelector,
+      manageBtnLabel: strings.CompleteModalButton,
+      value: this.properties.completeModalFields,
+      fields: [
+        {
+          id: "SiteCollectionSource",
+          title: strings.CompleteModalFieldsSiteCollection,
+          type: CustomCollectionFieldType.dropdown,
+          options: this.getDistinctSiteCollectionSourceOptions(),
+          required: true
+        },
+        {
+          id: "ListSourceField",
+          title: strings.CompleteModalFieldsList,
+          type: CustomCollectionFieldType.custom,
+          required: true,
+          onCustomRender: (field, value, onUpdate, item, itemId, onError) => {
+            return (
+              CustomCollectionDataField.getListPickerBySiteOptions(this.properties.listsCollectionData, field, item, onUpdate)
+            );
+          }
+        },
+        {
+          id: "SourceField",
+          title: strings.CompleteModalFieldsListField,
+          type: CustomCollectionFieldType.custom,
+          required: true,
+          onCustomRender: (field, value, onUpdate, item, itemId, onError) => {
+            if (item.SiteCollectionSource && item.ListSourceField) {
+              return (
+                CustomCollectionDataField.getFieldPickerByList(this.ListsFields[item.SiteCollectionSource][item.ListSourceField], field, item, onUpdate)
+              );
+            }
+          }
+        },
+        {
+          id: "TargetField",
+          title: strings.CompleteModalFieldsTargetField,
+          type: CustomCollectionFieldType.string,
+          required: true
+        }
+      ]
+    }) : emptyProperty;
+
+    let onclickRedirectPropertyPane = this.properties.clickIsRedirect ? PropertyFieldCollectionData("redirectData", {
+      key: "redirectData",
+      label: strings.redirectDataFieldSelector,
+      panelHeader: strings.redirectDataHeaderSelector,
+      manageBtnLabel: strings.redirectDataButton,
+      value: this.properties.redirectData,
+      fields: [
+        {
+          id: "SiteCollectionSource",
+          title: strings.redirectDataFieldsSiteCollection,
+          type: CustomCollectionFieldType.dropdown,
+          options: this.getDistinctSiteCollectionSourceOptions(),
+          required: true
+        },
+        {
+          id: "ListSourceField",
+          title: strings.redirectDataFieldsList,
+          type: CustomCollectionFieldType.custom,
+          required: true,
+          onCustomRender: (field, value, onUpdate, item, itemId, onError) => {
+            return (
+              CustomCollectionDataField.getListPickerBySiteOptions(this.properties.listsCollectionData, field, item, onUpdate)
+            );
+          }
+        },
+        {
+          id: "Url",
+          title: strings.redirectDataUrl,
+          type: CustomCollectionFieldType.string,
+          required: true
+        }
+      ]
+    }) : emptyProperty;
+
+    let onClickRedirectIdQueryParamProperyPane = this.properties.clickIsRedirect ? PropertyPaneTextField('onRedirectIdQuery', {
+      label: strings.OnclickRedirectIdText,
     }) : emptyProperty;
 
     return {
@@ -462,7 +640,14 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
                 PropertyPaneToggle('ShowPagination', {
                   label: strings.GeneralPropertiesShowPagination,
                 }),
-                ItemsInPagePropertyPane
+                ItemsInPagePropertyPane,
+                PropertyPaneToggle('clickEnabled', {
+                  label: strings.OnClickEvent,
+                }),
+                onclickEventOptionPropertyPane,
+                onClickCompleteModalPropertyPane,
+                onclickRedirectPropertyPane,
+                onClickRedirectIdQueryParamProperyPane
               ]
             }
 
@@ -492,22 +677,17 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
                 PropertyFieldCollectionData("displayFieldsCollectionData", {
                   enableSorting: true,
                   key: "displayFieldsCollectionData",
-                  label: "AA",
-                  panelHeader: "BB",
-                  manageBtnLabel: "CC",
+                  label: strings.CollectionDataFieldTitle,
+                  panelHeader: strings.CollectionDataFieldHeader,
+                  manageBtnLabel: strings.CollectionDataFieldsButton,
                   value: this.properties.displayFieldsCollectionData,
                   fields: [
                     {
+
                       id: "ColumnTitle",
                       title: "Column Title",
                       type: CustomCollectionFieldType.string,
                       required: true,
-                    },
-                    {
-                      id: "Order",
-                      title: strings.CollectionDataFieldsOrder,
-                      type: CustomCollectionFieldType.number,
-                      required: true
                     },
                     {
                       id: "ColumnWidth",
@@ -628,14 +808,14 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
               ],
             },
             {
-              groupName: "DD",
+              groupName: strings.StoragePropertiesGroupName,
               isCollapsed: true,
               groupFields: [
                 PropertyPaneToggle('UseLocalStorage', {
-                  label: "RR",
+                  label: strings.UseLocalStorage,
                   checked: this.properties.UseLocalStorage
                 }),
-                cacheeTimePropertyPane
+                cacheTimePropertyPane
               ],
             }
           ]

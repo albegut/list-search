@@ -14,6 +14,7 @@ import { IListField } from '../model/IListField';
 
 export default class ListService implements IListService {
   private web: IWeb;
+  private baseUrl: string;
 
   constructor(siteUrl: string) {
     sp.setup({
@@ -22,11 +23,13 @@ export default class ListService implements IListService {
       },
     });
     this.web = Web(siteUrl);
+    this.baseUrl = siteUrl;
   }
 
   public async getListItems(listQueryOptions: IListSearchListQuery, listPropertyName: string, sitePropertyName: string, sitePropertyValue: string, rowLimit: number): Promise<Array<any>> {
     try {
       let viewFields: string[] = listQueryOptions.fields.map(field => { return field.originalField; });
+      viewFields.push("Id");
       let items: any = undefined;
       if (listQueryOptions.camlQuery) {
         let query = this.getCamlQueryWithViewFieldsAndRowLimit(listQueryOptions.camlQuery, viewFields, rowLimit);
@@ -54,6 +57,8 @@ export default class ListService implements IListService {
           i[field.newField] = i[field.originalField];
           delete i[field.originalField];
         });
+        i["SiteUrl"] = this.baseUrl;
+        i["ListName"] = listQueryOptions.list;
         if (listPropertyName) {
           i[listPropertyName] = listQueryOptions.list;
         }
@@ -63,6 +68,14 @@ export default class ListService implements IListService {
         return i;
       });
       return mappedItems;
+    } catch (error) {
+      return Promise.reject(error);
+    }
+  }
+
+  public async getListItemById(listName: string, itemId: number): Promise<any> {
+    try {
+      return this.web.lists.getByTitle(listName).items.getById(itemId).get();
     } catch (error) {
       return Promise.reject(error);
     }
@@ -83,8 +96,6 @@ export default class ListService implements IListService {
       return Promise.reject(error);
     }
   }
-
-
 
   private async getListItemsByCamlQuery(listName: string, camlQuery: string): Promise<Array<any>> {
     try {

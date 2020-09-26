@@ -6,6 +6,10 @@ export interface IListSearchState {
   generalFilter: string;
   columnFilters: IColumnFilter[];
   activePage: number;
+  isModalHidden: boolean;
+  isModalLoading: boolean;
+  selectedItem: any;
+  completeModalItemData: any
 }
 
 export interface IColumnFilter {

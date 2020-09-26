@@ -3,6 +3,7 @@ import { IListField } from "../model/IListField";
 
 export default interface IListService {
   getListItems(listQueryOptions: IListSearchListQuery, listPropertyName: string, sitePropertyName: string, sitePropertyValue: string, rowLimit: number): Promise<Array<any>>;
+  getListItemById(listName: string, itemId: number): Promise<any>;
   getSiteListsTitle(): Promise<Array<any>>;
   getListFields(listTitle: string): Promise<Array<IListField>>;
 }

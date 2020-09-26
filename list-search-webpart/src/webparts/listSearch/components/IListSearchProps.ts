@@ -1,5 +1,5 @@
 import { WebPartContext } from "@microsoft/sp-webpart-base";
-import { IListFieldData, IListData, IDisplayFieldData } from "../model/IListConfigProps";
+import { IListFieldData, IListData, IDisplayFieldData, ICompleteModalData, IRedirectData } from "../model/IListConfigProps";
 import { IPropertyFieldSite, } from '@pnp/spfx-property-controls/lib/PropertyFieldSitePicker';
 import { IReadonlyTheme } from '@microsoft/sp-component-base';
 
@@ -31,4 +31,12 @@ export interface IListSearchProps {
   themeVariant: IReadonlyTheme | undefined;
   UseLocalStorage: boolean;
   minutesToCache: number;
+  clickEnabled: boolean;
+  clickIsSimpleModal: boolean;
+  clickIsCompleteModal: boolean;
+  clickIsRedirect: boolean;
+  clickIsDynamicData: boolean;
+  completeModalFields: Array<ICompleteModalData>;
+  redirectData: Array<IRedirectData>;
+  onRedirectIdQuery: string;
 }

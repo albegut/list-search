@@ -17,6 +17,18 @@ export interface IDisplayFieldData {
   IsListTitle: boolean;
   ColumnTitle: string;
   ColumnWidth?: number;
-  Order: number;
   Searcheable: boolean;
+}
+
+export interface ICompleteModalData {
+  SiteCollectionSource: string;
+  ListSourceField: string;
+  SourceField: string;
+  TargetField: string;
+}
+
+export interface IRedirectData {
+  SiteCollectionSource: string;
+  ListSourceField: string;
+  Url: string;
 }

@@ -11,9 +11,12 @@ import {
   IDetailsFooterProps,
   IDetailsRowBaseProps,
   DetailsRow,
+  SelectionMode
 } from 'office-ui-fabric-react/lib/DetailsList';
 import { IListSearchListQuery } from '../model/ListSearchQuery';
 import {
+  getTheme,
+  IconButton,
   MessageBar,
   MessageBarType
 } from 'office-ui-fabric-react';
@@ -44,6 +47,10 @@ export default class ISecondWebPart extends React.Component<IListSearchProps, IL
       errorMsg: "",
       columnFilters: [],
       generalFilter: "",
+      isModalHidden: true,
+      isModalLoading: false,
+      selectedItem: null,
+      completeModalItemData: null
     };
 
   }
@@ -118,7 +125,7 @@ export default class ISecondWebPart extends React.Component<IListSearchProps, IL
 
   private AddColumnsToDisplay(): void {
     this.props.displayFieldsCollectionData.sort().map(column => {
-      this.columns.push({ key: column.ColumnTitle, name: column.ColumnTitle, fieldName: column.ColumnTitle, minWidth: 100, maxWidth: column.ColumnWidth || undefined,  isResizable: true, data: column.Order });
+      this.columns.push({ key: column.ColumnTitle, name: column.ColumnTitle, fieldName: column.ColumnTitle, minWidth: 100, maxWidth: column.ColumnWidth || undefined, isResizable: true });
     })
   }
 
@@ -283,12 +290,120 @@ export default class ISecondWebPart extends React.Component<IListSearchProps, IL
     return result;
   }
 
+  private _onItemInvoked = (item: any) => {
+    this.GetCompleteItemData(item);
+    this.setState({ isModalHidden: false, selectedItem: item, isModalLoading: this.props.clickIsCompleteModal });
+  }
+
+  private _closeModalGlosarioModal = (): void => {
+    this.setState({ isModalHidden: true, selectedItem: null });
+  }
+
+  private async GetCompleteItemData(item: any) {
+    let listService: ListService = new ListService(item["SiteUrl"]);
+    let completeItem = await listService.getListItemById(item.ListName, item.Id);
+    this.setState({ completeModalItemData: completeItem, isModalLoading: false });
+  }
+
+  public GetOnClickAction() {
+    if (this.props.clickIsSimpleModal || this.props.clickIsCompleteModal) {
+      return this.GetModal();
+    }
+    else {
+      if (this.props.clickIsRedirect) {
+        let config = this.props.redirectData.filter(f => f.SiteCollectionSource == this.state.selectedItem.SiteUrl && f.ListSourceField == this.state.selectedItem.ListName);
+        if (config && config.length > 0) {
+          if (this.props.onRedirectIdQuery) {
+            window.location.replace(`${config[0].Url}?${this.props.onRedirectIdQuery}=${this.state.selectedItem.Id}`);
+          }
+          else {
+            window.location.replace(`${config[0].Url}`);
+          }
+        }
+      }
+      else {
+        //TODO notify dynamic data changed
+      }
+    }
+  }
+
+  public GetModal = () => {
+    const cancelIcon: IIconProps = { iconName: 'Cancel' };
+    const theme = getTheme();
+    const iconButtonStyles = {
+      root: {
+        color: theme.palette.neutralPrimary,
+        marginLeft: 'auto',
+        marginTop: '4px',
+        marginRight: '2px',
+        float: 'right'
+      },
+      rootHovered: {
+        color: theme.palette.neutralDark,
+      },
+    };
+    const Modal = React.lazy(() => import('office-ui-fabric-react/lib/Modal'));
+    const modal: JSX.Element =
+      <React.Suspense fallback={<div></div>}>
+        <Modal
+          isOpen={!this.state.isModalHidden}
+          onDismiss={this._closeModalGlosarioModal}
+          isBlocking={false}
+          containerClassName={styles.containerModal}
+        >
+          <div className={styles.headerModal}>
+            {this.state.selectedItem &&
+              <IconButton
+                styles={iconButtonStyles}
+                iconProps={cancelIcon}
+                onClick={this._closeModalGlosarioModal}
+              />}
+          </div>
+          {this.getBodyModal()}
+        </Modal>
+      </React.Suspense>;
+    return modal;
+  }
+
+  private getBodyModal() {
+    let body: JSX.Element;
+    if (this.props.clickIsSimpleModal) {
+      body = <div className={styles.bodyModal}>
+        {this.props.fieldsCollectionData.map(val => {
+          return <>
+            <div className={styles.propertyModal}>
+              {val.TargetField}
+            </div>
+            <div>
+              {this.state.selectedItem[val.TargetField]}
+            </div>
+          </>;
+        })}
+      </div>;
+    }
+    else {
+      body = <div className={styles.bodyModal}>
+        {this.state.isModalLoading ?
+          <Spinner label={strings.ListSearchLoading} size={SpinnerSize.large} /> :
+          this.props.completeModalFields.map(val => {
+            return <>
+              <div className={styles.propertyModal}>
+                {val.TargetField}
+              </div>
+              <div>
+                {this.state.completeModalItemData[val.SourceField]}
+              </div>
+            </>;
+          })
+        }
+      </div>;
+    }
+    return body;
+  }
+
 
   public render(): React.ReactElement<IListSearchProps> {
-
     const { semanticColors }: IReadonlyTheme = this.props.themeVariant;
-
-
     let clearAllButton = this.props.ClearAllFiltersBtnColor == "white" ? <DefaultButton text={this.props.ClearAllFiltersBtnText} className={styles.btn} onClick={(ev) => this._clearAllFilters()} /> :
       <PrimaryButton text={this.props.ClearAllFiltersBtnText} className={styles.btn} onClick={(ev) => this._clearAllFilters()} />;
     return (
@@ -305,8 +420,9 @@ export default class ISecondWebPart extends React.Component<IListSearchProps, IL
                 >{this.state.errorMsg}
                 </MessageBar> :
                 <React.Fragment>
+                  {this.props.clickEnabled && !this.state.isModalHidden && this.state.selectedItem && this.GetOnClickAction()}
                   <div className={styles.rowTopInformation}>
-                    {this.props.GeneralFilter && <div className={styles.ColGeneralFilter}><SearchBox value={this.state.generalFilter} placeholder={this.props.GeneralFilterPlaceHolderText} onClear={() => this.clearGeneralFilter()} onChange={(ev, newValue) => this.filterListItemsByGeneralFilter(newValue, false, true)} /></div>}
+                    {this.props.GeneralFilter && <div className={this.props.ShowClearAllFilters ? styles.ColGeneralFilterWithBtn : styles.ColGeneralFilterOnly}><SearchBox value={this.state.generalFilter} placeholder={this.props.GeneralFilterPlaceHolderText} onClear={() => this.clearGeneralFilter()} onChange={(ev, newValue) => this.filterListItemsByGeneralFilter(newValue, false, true)} /></div>}
                     <div className={styles.ColClearAll}>
                       {this.props.ShowClearAllFilters && clearAllButton}
                     </div>
@@ -314,10 +430,22 @@ export default class ISecondWebPart extends React.Component<IListSearchProps, IL
                   <div className={styles.rowData}>
                     <div className={styles.colData}>
                       {this.props.ShowItemCount && <div className={styles.template_resultCount}>{this.props.ItemCountText.replace("{itemCount}", `${this.state.filterItems.length}`)}</div>}
-                      <DetailsList items={this._getItems()} columns={this.columns.sort((prev, next) => prev.data - next.data)}
+                      <DetailsList items={this._getItems()} columns={this.columns}
                         onRenderDetailsFooter={this._checkIndividualFilter("footer") ? (detailsFooterProps) => this._onRenderDetails(detailsFooterProps) : undefined}
                         onRenderDetailsHeader={this._checkIndividualFilter("header") ? (detailsHeaderProps) => this._onRenderDetails(detailsHeaderProps) : undefined}
-                        className={styles.searchListData} />
+                        className={styles.searchListData}
+                        selectionMode={SelectionMode.none}
+                        onItemInvoked={this.props.clickEnabled ? this._onItemInvoked : null}
+                        onRenderRow={(props, defaultRender) => (
+                          this.props.clickEnabled ?
+                            <>
+                              {defaultRender({ ...props, styles: { root: { cursor: 'pointer' } } })}
+                            </>
+                            :
+                            <>
+                              {defaultRender({ ...props })}
+                            </>
+                        )} />
                       {this.props.ShowPagination &&
                         <div className={styles.paginationContainer}>
                           <div className={styles.paginationContainer__paginationContainer}>
@@ -331,7 +459,7 @@ export default class ISecondWebPart extends React.Component<IListSearchProps, IL
                                   nextPageText={<Icon theme={this.props.themeVariant as ITheme} iconName='ChevronRight' />}
                                   activeLinkClass={styles.active}
                                   itemsCountPerPage={this.props.ItemsInPage}
-                                  totalItemsCount={this.state.items ? this.state.items.length : 0}
+                                  totalItemsCount={this.state.filterItems ? this.state.filterItems.length : 0}
                                   pageRangeDisplayed={5}
                                   onChange={this.handlePageChange.bind(this)}
                                 />
