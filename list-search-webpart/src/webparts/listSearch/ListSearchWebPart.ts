@@ -2,11 +2,9 @@ import * as React from 'react';
 import * as ReactDom from 'react-dom';
 import { Version } from '@microsoft/sp-core-library';
 import {
-  IPropertyPaneConfiguration,
   PropertyPaneTextField,
-  PropertyPaneToggle,
   PropertyPaneDropdown,
-  IPropertyPaneDropdownOption
+  IPropertyPaneDropdownOption, PropertyPaneToggle, IPropertyPaneConfiguration
 } from '@microsoft/sp-property-pane';
 import { BaseClientSideWebPart } from '@microsoft/sp-webpart-base';
 import { PropertyFieldCollectionData, CustomCollectionFieldType } from '@pnp/spfx-property-controls/lib/PropertyFieldCollectionData';
@@ -14,7 +12,7 @@ import { IListSearchProps } from './components/IListSearchProps';
 import ListSearch from './components/ListSearch';
 import * as strings from 'ListSearchWebPartStrings';
 import { IListFieldData, IListData, IDisplayFieldData, ICompleteModalData, IRedirectData } from './model/IListConfigProps';
-import { PropertyFieldSitePicker, IPropertyFieldSite, } from '@pnp/spfx-property-controls/lib/PropertyFieldSitePicker';
+import { IPropertyFieldSite, PropertyFieldSitePicker, } from '@pnp/spfx-property-controls/lib/PropertyFieldSitePicker';
 import { PropertyFieldNumber } from '@pnp/spfx-property-controls/lib/PropertyFieldNumber';
 import { Placeholder } from "@pnp/spfx-controls-react/lib/Placeholder";
 import { DisplayMode } from '@microsoft/sp-core-library';
@@ -29,6 +27,10 @@ import { IDropdownOption } from 'office-ui-fabric-react/lib/components/Dropdown'
 import CustomCollectionDataField from './custompropertyPane/CustomCollectionDataField';
 import ListService from './services/ListService';
 import { IListField } from './model/IListField';
+import { IDynamicDataPropertyDefinition } from '@microsoft/sp-dynamic-data';
+import { IDynamicDataCallables } from '@microsoft/sp-dynamic-data';
+import { IDynamicItem } from './model/IDynamicItem';
+
 
 
 export interface IListSearchWebPartProps {
@@ -68,9 +70,10 @@ export interface IListSearchWebPartProps {
   onRedirectIdQuery: string;
 }
 
-export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearchWebPartProps> {
+export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearchWebPartProps> implements IDynamicDataCallables {
   private _themeProvider: ThemeProvider;
   private _themeVariant: IReadonlyTheme | undefined;
+  private selectedItem: IDynamicItem;
   private sitesLists: {} = {};
   private ListsFields: {} = {};
 
@@ -92,7 +95,33 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
     // Register a handler to be notified if the theme variant changes
     this._themeProvider.themeChangedEvent.add(this, this._handleThemeChangedEvent);
 
+    this.context.dynamicDataSourceManager.initializeSource(this);
+    this.selectedItem = { webUrl: '', listName: '', itemId: -1 };
     return super.onInit();
+  }
+
+  public getPropertyDefinitions(): ReadonlyArray<IDynamicDataPropertyDefinition> {
+    return [
+      {
+        id: 'selectedItem',
+        title: 'Selected Item'
+      }
+    ];
+  }
+
+  public getPropertyValue(propertyId: string): IDynamicItem {
+    switch (propertyId) {
+      case 'selectedItem':
+        return this.selectedItem;
+    }
+
+    throw new Error('Unsupported property id');
+  }
+
+  private onSelectedItem = (selectedItem: IDynamicItem): void => {
+    this.selectedItem = selectedItem;
+    // notify that the value has changed
+    this.context.dynamicDataSourceManager.notifyPropertyChanged('selectedItem');
   }
 
   async onPropertyPaneConfigurationStart() {
@@ -227,6 +256,7 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
           completeModalFields: this.properties.completeModalFields,
           redirectData: this.properties.redirectData,
           onRedirectIdQuery: this.properties.onRedirectIdQuery,
+          onSelectedItem: this.onSelectedItem.bind(this),
         }
       );
       renderElement = element;

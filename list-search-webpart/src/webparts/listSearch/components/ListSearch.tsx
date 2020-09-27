@@ -322,7 +322,11 @@ export default class ISecondWebPart extends React.Component<IListSearchProps, IL
         }
       }
       else {
-        //TODO notify dynamic data changed
+        this.props.onSelectedItem({
+          webUrl: this.state.selectedItem.SiteUrl,
+          listName: this.state.selectedItem.ListName,
+          itemId: this.state.selectedItem.Id
+        });
       }
     }
   }

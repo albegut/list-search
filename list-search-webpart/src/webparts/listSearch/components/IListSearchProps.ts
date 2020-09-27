@@ -39,4 +39,5 @@ export interface IListSearchProps {
   completeModalFields: Array<ICompleteModalData>;
   redirectData: Array<IRedirectData>;
   onRedirectIdQuery: string;
+  onSelectedItem: any;
 }
