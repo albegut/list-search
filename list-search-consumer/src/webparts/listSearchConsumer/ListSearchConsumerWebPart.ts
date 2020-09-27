@@ -1,32 +1,44 @@
 import { Version } from '@microsoft/sp-core-library';
 import {
   IPropertyPaneConfiguration,
-  PropertyPaneTextField
+  PropertyPaneTextField,
+  DynamicDataSharedDepth,
+  PropertyPaneDynamicFieldSet,
+  PropertyPaneDynamicField
 } from '@microsoft/sp-property-pane';
-import { BaseClientSideWebPart } from '@microsoft/sp-webpart-base';
+import {
+  BaseClientSideWebPart,
+  IWebPartPropertiesMetadata,
+} from '@microsoft/sp-webpart-base';
 import { escape } from '@microsoft/sp-lodash-subset';
 
 import styles from './ListSearchConsumerWebPart.module.scss';
 import * as strings from 'ListSearchConsumerWebPartStrings';
+import { DynamicProperty } from '@microsoft/sp-component-base';
+
 
 export interface IListSearchConsumerWebPartProps {
   description: string;
+  webUrl:DynamicProperty<string>;
+  listName: DynamicProperty<string>;
+  itemId: DynamicProperty<number>;
 }
 
 export default class ListSearchConsumerWebPart extends BaseClientSideWebPart<IListSearchConsumerWebPartProps> {
 
   public render(): void {
+    const webUrl: string | undefined = this.properties.webUrl.tryGetValue();
+    const listName: string | undefined = this.properties.listName.tryGetValue();
+    const itemId: number | undefined = this.properties.itemId.tryGetValue();
     this.domElement.innerHTML = `
-      <div class="${ styles.listSearchConsumer }">
-        <div class="${ styles.container }">
-          <div class="${ styles.row }">
-            <div class="${ styles.column }">
-              <span class="${ styles.title }">Welcome to SharePoint!</span>
-              <p class="${ styles.subTitle }">Customize SharePoint experiences using Web Parts.</p>
-              <p class="${ styles.description }">${escape(this.properties.description)}</p>
-              <a href="https://aka.ms/spfx" class="${ styles.button }">
-                <span class="${ styles.label }">Learn more</span>
-              </a>
+      <div class="${styles.listSearchConsumer}">
+        <div class="${styles.container}">
+          <div class="${styles.row}">
+            <div class="${styles.column}">
+              <span class="${styles.title}">List search consumer webpart</span>
+              <p class="${styles.description}">WebUrl: ${webUrl}</p>
+              <p class="${styles.description}">List Name: ${listName}</p>
+              <p class="${styles.description}">ItemId: ${itemId}</p>
             </div>
           </div>
         </div>
@@ -48,8 +60,22 @@ export default class ListSearchConsumerWebPart extends BaseClientSideWebPart<ILi
             {
               groupName: strings.BasicGroupName,
               groupFields: [
-                PropertyPaneTextField('description', {
-                  label: strings.DescriptionFieldLabel
+                PropertyPaneDynamicFieldSet({
+                  label: 'Select web Url',
+                  fields: [
+                    PropertyPaneDynamicField('webUrl', {
+                      label: 'Web Url'
+                    }),
+                    PropertyPaneDynamicField('listName', {
+                      label: 'List Name'
+                    }),
+                    PropertyPaneDynamicField('itemId', {
+                      label: 'Item Id'
+                    })
+                  ],
+                  sharedConfiguration: {
+                    depth: DynamicDataSharedDepth.Property
+                  }
                 })
               ]
             }
