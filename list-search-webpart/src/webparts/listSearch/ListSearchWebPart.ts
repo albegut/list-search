@@ -349,6 +349,14 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
 
           break;
         }
+      case "clickEnabled":
+        {
+          if (newValue) {
+            this.properties.onClickSelectedOption = "simpleModal";
+            this.properties.clickIsSimpleModal = true;
+          }
+          break;
+        }
 
     }
   }
