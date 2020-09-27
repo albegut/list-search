@@ -126,7 +126,7 @@ export default class ISecondWebPart extends React.Component<IListSearchProps, IL
   private AddColumnsToDisplay(): void {
     this.props.displayFieldsCollectionData.sort().map(column => {
       this.columns.push({ key: column.ColumnTitle, name: column.ColumnTitle, fieldName: column.ColumnTitle, minWidth: 100, maxWidth: column.ColumnWidth || undefined, isResizable: true });
-    })
+    });
   }
 
   private generateKeymap() {

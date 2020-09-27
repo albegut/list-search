@@ -29,14 +29,14 @@ export default class CustomCollectionDataField {
           text: option.ListSourceField
         });
       }
-    })
+    });
     return this.getCustomCollectionDropDown(currentOptions, field, row, updateFunction);
   }
 
   public static getListPickerBySite(possibleOptions: Array<string>, field: ICustomCollectionField, row: IListData, updateFunction: any, customOnChange: any): JSX.Element {
     let options = [];
     if (possibleOptions) {
-      options = possibleOptions.map(option => { return { key: option, text: option } });
+      options = possibleOptions.map(option => { return { key: option, text: option }; });
     }
     return this.getCustomCollectionDropDown(options, field, row, updateFunction, null, customOnChange);
   }
@@ -44,7 +44,7 @@ export default class CustomCollectionDataField {
   public static getFieldPickerByList(possibleOptions: Array<IListField>, field: ICustomCollectionField, row: IListData, updateFunction: any): JSX.Element {
     let options = [];
     if (possibleOptions) {
-      options = possibleOptions.map(option => { return { key: option.InternalName, text: option.Title } });
+      options = possibleOptions.map(option => { return { key: option.InternalName, text: option.Title }; });
     }
     return this.getCustomCollectionDropDown(options, field, row, updateFunction);
   }

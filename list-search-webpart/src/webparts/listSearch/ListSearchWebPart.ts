@@ -35,7 +35,7 @@ import { IDynamicItem } from './model/IDynamicItem';
 
 export interface IListSearchWebPartProps {
   ListName: string;
-  displayFieldsCollectionData: Array<IDisplayFieldData>
+  displayFieldsCollectionData: Array<IDisplayFieldData>;
   fieldCollectionData: Array<IListFieldData>;
   listsCollectionData: Array<IListData>;
   ShowListName: boolean;
@@ -124,7 +124,7 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
     this.context.dynamicDataSourceManager.notifyPropertyChanged('selectedItem');
   }
 
-  async onPropertyPaneConfigurationStart() {
+  protected async onPropertyPaneConfigurationStart() {
     await this.loadCollectionData();
   }
 
@@ -152,13 +152,13 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
     let listData = await Promise.all(listsDataPromises);
 
     listData.map((lists, index) => {
-      this.saveSiteCollectionLists(sites[index], lists.map(listInfo => { return listInfo.Title }));
-    })
+      this.saveSiteCollectionLists(sites[index], lists.map(listInfo => { return listInfo.Title; }));
+    });
   }
 
   private async loadListsFields() {
     if (this.properties.listsCollectionData && this.properties.listsCollectionData.length > 0) {
-      let siteStructure = {}
+      let siteStructure = {};
       this.properties.listsCollectionData.map(option => {
         if (!siteStructure[option.SiteCollectionSource]) {
           siteStructure[option.SiteCollectionSource] = [];
@@ -176,14 +176,14 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
           listsDataPromises.push(service.getListFields(list));
           lists.push(list);
           sites.push(site);
-        })
-      })
+        });
+      });
 
       let listData = await Promise.all(listsDataPromises);
 
       listData.map((fields, index) => {
         this.saveSiteCollectionListsFields(sites[index], lists[index], fields);
-      })
+      });
     }
   }
 
@@ -290,7 +290,7 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
           }
           else {
             if (!this.properties.displayFieldsCollectionData.some(field => field.IsListTitle)) {
-              this.properties.displayFieldsCollectionData.push({ ColumnTitle: "ListName", IsListTitle: true, IsSiteTitle: false, Searcheable: true })
+              this.properties.displayFieldsCollectionData.push({ ColumnTitle: "ListName", IsListTitle: true, IsSiteTitle: false, Searcheable: true });
             }
           }
           break;
@@ -303,7 +303,7 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
           }
           else {
             if (!this.properties.displayFieldsCollectionData.some(field => field.IsSiteTitle)) {
-              this.properties.displayFieldsCollectionData.push({ ColumnTitle: "Site", IsListTitle: false, IsSiteTitle: true, Searcheable: true })
+              this.properties.displayFieldsCollectionData.push({ ColumnTitle: "Site", IsListTitle: false, IsSiteTitle: true, Searcheable: true });
             }
           }
           break;
@@ -324,7 +324,7 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
                 if (oldValue.indexOf(site) < 0) {
                   let service: ListService = new ListService(site.url);
                   let lists = await service.getSiteListsTitle();
-                  saveSitesInfoCallback(site.url, lists.map(listInfo => { return listInfo.Title }));
+                  saveSitesInfoCallback(site.url, lists.map(listInfo => { return listInfo.Title; }));
                 }
               });
             }

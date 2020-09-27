@@ -6,7 +6,7 @@ import { IReadonlyTheme } from '@microsoft/sp-component-base';
 
 export interface IListSearchProps {
   Context: WebPartContext;
-  displayFieldsCollectionData: Array<IDisplayFieldData>
+  displayFieldsCollectionData: Array<IDisplayFieldData>;
   fieldsCollectionData: Array<IListFieldData>;
   listsCollectionData: Array<IListData>;
   ShowListName: boolean;

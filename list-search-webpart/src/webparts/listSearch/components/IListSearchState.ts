@@ -9,7 +9,7 @@ export interface IListSearchState {
   isModalHidden: boolean;
   isModalLoading: boolean;
   selectedItem: any;
-  completeModalItemData: any
+  completeModalItemData: any;
 }
 
 export interface IColumnFilter {
