@@ -2,11 +2,8 @@ import * as React from 'react';
 import { Dropdown } from 'office-ui-fabric-react/lib/components/Dropdown';
 import { ICustomCollectionField } from '@pnp/spfx-property-controls/lib/PropertyFieldCollectionData';
 import { IListFieldData, IListData } from '../model/IListConfigProps';
-import { PropertyFieldListPicker, PropertyFieldListPickerOrderBy } from '@pnp/spfx-property-controls/lib/PropertyFieldListPicker';
-import { IPropertyPaneDropdownOption } from '@microsoft/sp-webpart-base';
-import ListService from '../services/ListService';
+import { IPropertyPaneDropdownOption } from '@microsoft/sp-property-pane';
 import { IListField } from '../model/IListField';
-import { GeneralFieldsPropertiesListDisplayNameOrderDescription } from 'ListSearchWebPartStrings';
 
 
 
@@ -20,6 +17,7 @@ export default class CustomCollectionDataField {
       onRenderOption={field.onRenderOption}
       className="PropertyFieldCollectionData__panel__dropdown-field" />);
   }
+
   public static getListPickerBySiteOptions(possibleOptions: Array<IListData>, field: ICustomCollectionField, row: IListFieldData, updateFunction: any): JSX.Element {
     let currentOptions = [];
     possibleOptions.filter(option => {
@@ -33,7 +31,7 @@ export default class CustomCollectionDataField {
     return this.getCustomCollectionDropDown(currentOptions, field, row, updateFunction);
   }
 
-  public static getListPickerBySite(possibleOptions: Array<string>, field: ICustomCollectionField, row: IListData, updateFunction: any, customOnChange: any): JSX.Element {
+  public static getPickerByStringOptions(possibleOptions: Array<string>, field: ICustomCollectionField, row: IListData, updateFunction: any, customOnChange: any): JSX.Element {
     let options = [];
     if (possibleOptions) {
       options = possibleOptions.map(option => { return { key: option, text: option }; });

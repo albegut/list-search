@@ -10,6 +10,8 @@ export interface IListData {
   ListSourceField: string;
   ListView: string;
   Query: string;
+  uniqueId: string;
+  sortIdx: number;
 }
 
 export interface IDisplayFieldData {
