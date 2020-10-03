@@ -68,6 +68,7 @@ export interface IListSearchWebPartProps {
   completeModalFields: Array<ICompleteModalData>;
   redirectData: Array<IRedirectData>;
   onRedirectIdQuery: string;
+  onClickNumberOfClicksOption: string;
 }
 
 export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearchWebPartProps> implements IDynamicDataCallables {
@@ -257,6 +258,7 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
           redirectData: this.properties.redirectData,
           onRedirectIdQuery: this.properties.onRedirectIdQuery,
           onSelectedItem: this.onSelectedItem.bind(this),
+          oneClickOption: this.properties.onClickNumberOfClicksOption == "oneClick",
         }
       );
       renderElement = element;
@@ -282,6 +284,22 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
   protected async onPropertyPaneFieldChanged(propertyPath: string, oldValue: any, newValue: any, sitesLists?: {}, saveSitesInfoCallback?: any) {
     super.onPropertyPaneFieldChanged(propertyPath, oldValue, newValue);
     switch (propertyPath) {
+      case "listsCollectionData":
+        {
+          this.properties.completeModalFields = this.properties.completeModalFields && this.properties.completeModalFields.filter(modalField => {
+            return newValue.filter(option => option.SiteCollectionSource === modalField.SiteCollectionSource && option.ListSourceField === modalField.ListSourceField).length > 0;
+          });
+
+          this.properties.redirectData = this.properties.redirectData && this.properties.redirectData.filter(modalField => {
+            return newValue.filter(option => option.SiteCollectionSource === modalField.SiteCollectionSource && option.ListSourceField === modalField.ListSourceField).length > 0;
+          });
+
+          this.properties.fieldCollectionData = this.properties.fieldCollectionData && this.properties.fieldCollectionData.filter(modalField => {
+            return newValue.filter(option => option.SiteCollectionSource === modalField.SiteCollectionSource && option.ListSourceField === modalField.ListSourceField).length > 0;
+          });
+
+          break;
+        }
       case "ShowListName":
         {
           if (!newValue) {
@@ -354,6 +372,9 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
           if (newValue) {
             this.properties.onClickSelectedOption = "simpleModal";
             this.properties.clickIsSimpleModal = true;
+            this.properties.clickIsCompleteModal = false;
+            this.properties.clickIsRedirect = false;
+            this.properties.clickIsDynamicData = false;
           }
           break;
         }
@@ -506,11 +527,27 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
       ],
     }) : emptyProperty;
 
-    let onClickCompleteModalPropertyPane = this.properties.clickIsCompleteModal ? PropertyFieldCollectionData("completeModalFields", {
+    let onClickNumberOfClicksOptionPropertyPane = this.properties.clickEnabled ? PropertyPaneDropdown('onClickNumberOfClicksOption', {
+      label: strings.OnClickNumberOfClickOptionsToSelect,
+      selectedKey: this.properties.onClickNumberOfClicksOption || "twoClicks",
+      options: [
+        {
+          key: "oneClick",
+          text: strings.OneClickTriggerText
+        },
+        {
+          key: "twoClicks",
+          text: strings.TwoClickTriggerText
+        }
+      ],
+    }) : emptyProperty;
+
+    let onClickCompleteModalPropertyPane = this.properties.clickEnabled && this.properties.clickIsCompleteModal ? PropertyFieldCollectionData("completeModalFields", {
       key: "completeModalFields",
       label: strings.CompleteModalFieldSelector,
       panelHeader: strings.CompleteModalHeaderSelector,
       manageBtnLabel: strings.CompleteModalButton,
+      enableSorting: true,
       value: this.properties.completeModalFields,
       fields: [
         {
@@ -553,7 +590,7 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
       ]
     }) : emptyProperty;
 
-    let onclickRedirectPropertyPane = this.properties.clickIsRedirect ? PropertyFieldCollectionData("redirectData", {
+    let onclickRedirectPropertyPane = this.properties.clickEnabled && this.properties.clickIsRedirect ? PropertyFieldCollectionData("redirectData", {
       key: "redirectData",
       label: strings.redirectDataFieldSelector,
       panelHeader: strings.redirectDataHeaderSelector,
@@ -587,7 +624,7 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
       ]
     }) : emptyProperty;
 
-    let onClickRedirectIdQueryParamProperyPane = this.properties.clickIsRedirect ? PropertyPaneTextField('onRedirectIdQuery', {
+    let onClickRedirectIdQueryParamProperyPane = this.properties.clickEnabled && this.properties.clickIsRedirect ? PropertyPaneTextField('onRedirectIdQuery', {
       label: strings.OnclickRedirectIdText,
     }) : emptyProperty;
 
@@ -617,6 +654,7 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
                   label: strings.ListSelector,
                   panelHeader: strings.ListSelectorPanelHeader,
                   manageBtnLabel: strings.ListSelectorLabel,
+                  enableSorting: true,
                   value: this.properties.listsCollectionData,
                   fields: [
                     {
@@ -682,6 +720,7 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
                 PropertyPaneToggle('clickEnabled', {
                   label: strings.OnClickEvent,
                 }),
+                onClickNumberOfClicksOptionPropertyPane,
                 onclickEventOptionPropertyPane,
                 onClickCompleteModalPropertyPane,
                 onclickRedirectPropertyPane,
@@ -875,6 +914,7 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
   }
 
   private async setNewListFieds(row: IListData, fieldId: string, optionKey: string, updateFunction: any, errorFunction: any) {
+
     updateFunction(fieldId, optionKey);
     if (this.ListsFields[row.SiteCollectionSource] == undefined) {
       this.ListsFields[row.SiteCollectionSource] = {};

@@ -77,6 +77,9 @@ declare interface IListSearchWebPartStrings {
   redirectDataFieldsSiteCollection: string;
   redirectDataFieldsList: string;
   redirectDataUrl: string;
+  OnClickNumberOfClickOptionsToSelect: string;
+  OneClickTriggerText: string;
+  TwoClickTriggerText: string;
 }
 
 declare module 'ListSearchWebPartStrings' {

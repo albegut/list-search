@@ -28,6 +28,7 @@ import { DefaultButton, PrimaryButton } from 'office-ui-fabric-react';
 import { Icon, ITheme } from 'office-ui-fabric-react';
 import SessionStorage from '../services/SessionStorageService';
 import { ISessionStorageElement } from '../model/ISessiongStorageElement';
+import { Shimmer } from 'office-ui-fabric-react/lib/Shimmer';
 
 
 
@@ -86,11 +87,11 @@ export default class ISecondWebPart extends React.Component<IListSearchProps, IL
         }
       }
 
-      this.setState({
-        items: result,
-        filterItems: result,
-        isLoading: false,
-      });
+      if (this.props.ItemLimit) {
+        result = result.slice(0, this.props.ItemLimit);
+      }
+
+      this.setState({ items: result, filterItems: result, isLoading: false });
     } catch (error) {
       this.setState({
         errorMsg: `readItemsError ${error.message}`,
@@ -198,7 +199,7 @@ export default class ISecondWebPart extends React.Component<IListSearchProps, IL
       this.setState({ filterItems: newItems, columnFilters: newFilters, generalFilter: isFromClearGeneralFilter ? "" : this.state.generalFilter });
     }
     else {
-      this.setState({ generalFilter: isFromClearGeneralFilter ? "" : this.state.generalFilter });
+      this.setState({ filterItems: itemsToRefine, generalFilter: isFromClearGeneralFilter ? "" : this.state.generalFilter });
     }
   }
 
@@ -291,7 +292,7 @@ export default class ISecondWebPart extends React.Component<IListSearchProps, IL
   }
 
   private _onItemInvoked = (item: any) => {
-    this.GetCompleteItemData(item);
+    this.props.clickIsCompleteModal && this.GetCompleteItemData(item);
     this.setState({ isModalHidden: false, selectedItem: item, isModalLoading: this.props.clickIsCompleteModal });
   }
 
@@ -314,7 +315,9 @@ export default class ISecondWebPart extends React.Component<IListSearchProps, IL
         let config = this.props.redirectData.filter(f => f.SiteCollectionSource == this.state.selectedItem.SiteUrl && f.ListSourceField == this.state.selectedItem.ListName);
         if (config && config.length > 0) {
           if (this.props.onRedirectIdQuery) {
-            window.location.replace(`${config[0].Url}?${this.props.onRedirectIdQuery}=${this.state.selectedItem.Id}`);
+            var url = new URL(config[0].Url);
+            url.searchParams.append(this.props.onRedirectIdQuery, this.state.selectedItem.Id);
+            window.location.replace(url.toString());
           }
           else {
             window.location.replace(`${config[0].Url}`);
@@ -387,15 +390,14 @@ export default class ISecondWebPart extends React.Component<IListSearchProps, IL
     }
     else {
       body = <div className={styles.bodyModal}>
-        {this.state.isModalLoading ?
-          <Spinner label={strings.ListSearchLoading} size={SpinnerSize.large} /> :
-          this.props.completeModalFields.map(val => {
+        {this.props.completeModalFields.filter(field => field.SiteCollectionSource == this.state.selectedItem.SiteUrl &&
+          field.ListSourceField == this.state.selectedItem.ListName).map(val => {
             return <>
               <div className={styles.propertyModal}>
                 {val.TargetField}
               </div>
               <div>
-                {this.state.completeModalItemData[val.SourceField]}
+                {this.state.isModalLoading ? <Shimmer /> : this.state.completeModalItemData[val.SourceField]}
               </div>
             </>;
           })
@@ -403,6 +405,22 @@ export default class ISecondWebPart extends React.Component<IListSearchProps, IL
       </div>;
     }
     return body;
+  }
+
+  private getOnRowClickRender(detailrow: any, defaultRender: any): JSX.Element {
+    return this.props.clickEnabled ?
+      this.props.oneClickOption ?
+        <div onClick={() => this._onItemInvoked(detailrow.item)}>
+          {defaultRender({ ...detailrow, styles: { root: { cursor: 'pointer' } } })}
+        </div>
+        :
+        <>
+          {defaultRender({ ...detailrow, styles: { root: { cursor: 'pointer' } } })}
+        </>
+      :
+      <>
+        {defaultRender({ ...detailrow })}
+      </>
   }
 
 
@@ -439,17 +457,8 @@ export default class ISecondWebPart extends React.Component<IListSearchProps, IL
                         onRenderDetailsHeader={this._checkIndividualFilter("header") ? (detailsHeaderProps) => this._onRenderDetails(detailsHeaderProps) : undefined}
                         className={styles.searchListData}
                         selectionMode={SelectionMode.none}
-                        onItemInvoked={this.props.clickEnabled ? this._onItemInvoked : null}
-                        onRenderRow={(props, defaultRender) => (
-                          this.props.clickEnabled ?
-                            <>
-                              {defaultRender({ ...props, styles: { root: { cursor: 'pointer' } } })}
-                            </>
-                            :
-                            <>
-                              {defaultRender({ ...props })}
-                            </>
-                        )} />
+                        onItemInvoked={this.props.clickEnabled && !this.props.oneClickOption ? this._onItemInvoked : null}
+                        onRenderRow={(props, defaultRender) => this.getOnRowClickRender(props, defaultRender)} />
                       {this.props.ShowPagination &&
                         <div className={styles.paginationContainer}>
                           <div className={styles.paginationContainer__paginationContainer}>

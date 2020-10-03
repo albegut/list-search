@@ -78,6 +78,9 @@ define([], function () {
     redirectDataFieldsSiteCollection: "Site Collection",
     redirectDataFieldsList: "List",
     redirectDataUrl: "Url",
+    OnClickNumberOfClickOptionsToSelect: "Trigger option",
+    OneClickTriggerText: "One click",
+    TwoClickTriggerText: "Two clicks"
 
   }
 });

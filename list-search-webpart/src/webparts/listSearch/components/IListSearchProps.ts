@@ -40,4 +40,5 @@ export interface IListSearchProps {
   redirectData: Array<IRedirectData>;
   onRedirectIdQuery: string;
   onSelectedItem: any;
+  oneClickOption: boolean;
 }
