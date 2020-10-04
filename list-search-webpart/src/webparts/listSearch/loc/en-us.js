@@ -80,7 +80,8 @@ define([], function () {
     redirectDataUrl: "Url",
     OnClickNumberOfClickOptionsToSelect: "Trigger option",
     OneClickTriggerText: "One click",
-    TwoClickTriggerText: "Two clicks"
-
+    TwoClickTriggerText: "Two clicks",
+    InformationPropertiesGroupName: "Webpart Information",
+    AboutPropertiesGroupName: "About",
   }
 });

@@ -29,6 +29,7 @@ import { Icon, ITheme } from 'office-ui-fabric-react';
 import SessionStorage from '../services/SessionStorageService';
 import { ISessionStorageElement } from '../model/ISessiongStorageElement';
 import { Shimmer } from 'office-ui-fabric-react/lib/Shimmer';
+import { Modal } from 'office-ui-fabric-react/lib/Modal';
 
 
 
@@ -301,8 +302,12 @@ export default class ISecondWebPart extends React.Component<IListSearchProps, IL
   }
 
   private async GetCompleteItemData(item: any) {
-    let listService: ListService = new ListService(item["SiteUrl"]);
+    let listService: ListService = new ListService(item.SiteUrl);
     let completeItem = await listService.getListItemById(item.ListName, item.Id);
+    if (completeItem) {
+      completeItem.SiteUrl = item.SiteUrl;
+      completeItem.ListName = item.ListName;
+    }
     this.setState({ completeModalItemData: completeItem, isModalLoading: false });
   }
 
@@ -349,26 +354,23 @@ export default class ISecondWebPart extends React.Component<IListSearchProps, IL
         color: theme.palette.neutralDark,
       },
     };
-    const Modal = React.lazy(() => import('office-ui-fabric-react/lib/Modal'));
     const modal: JSX.Element =
-      <React.Suspense fallback={<div></div>}>
-        <Modal
-          isOpen={!this.state.isModalHidden}
-          onDismiss={this._closeModalGlosarioModal}
-          isBlocking={false}
-          containerClassName={styles.containerModal}
-        >
-          <div className={styles.headerModal}>
-            {this.state.selectedItem &&
-              <IconButton
-                styles={iconButtonStyles}
-                iconProps={cancelIcon}
-                onClick={this._closeModalGlosarioModal}
-              />}
-          </div>
-          {this.getBodyModal()}
-        </Modal>
-      </React.Suspense>;
+      <Modal
+        isOpen={!this.state.isModalHidden}
+        onDismiss={this._closeModalGlosarioModal}
+        isBlocking={false}
+        containerClassName={styles.containerModal}
+      >
+        <div className={styles.headerModal}>
+          {this.state.selectedItem &&
+            <IconButton
+              styles={iconButtonStyles}
+              iconProps={cancelIcon}
+              onClick={this._closeModalGlosarioModal}
+            />}
+        </div>
+        {this.getBodyModal()}
+      </Modal>
     return modal;
   }
 

@@ -80,6 +80,8 @@ declare interface IListSearchWebPartStrings {
   OnClickNumberOfClickOptionsToSelect: string;
   OneClickTriggerText: string;
   TwoClickTriggerText: string;
+  InformationPropertiesGroupName: string;
+  AboutPropertiesGroupName: string;
 }
 
 declare module 'ListSearchWebPartStrings' {

@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { Dropdown } from 'office-ui-fabric-react/lib/components/Dropdown';
 import { ICustomCollectionField } from '@pnp/spfx-property-controls/lib/PropertyFieldCollectionData';
-import { IListFieldData, IListData } from '../model/IListConfigProps';
+import { IListFieldData, IListData, ICustomOption } from '../model/IListConfigProps';
 import { IPropertyPaneDropdownOption } from '@microsoft/sp-property-pane';
 import { IListField } from '../model/IListField';
 
@@ -28,7 +28,7 @@ export default class CustomCollectionDataField {
         });
       }
     });
-    return this.getCustomCollectionDropDown(currentOptions, field, row, updateFunction);
+    return this.getCustomCollectionDropDown(currentOptions.sort(), field, row, updateFunction);
   }
 
   public static getPickerByStringOptions(possibleOptions: Array<string>, field: ICustomCollectionField, row: IListData, updateFunction: any, customOnChange: any): JSX.Element {
@@ -36,14 +36,22 @@ export default class CustomCollectionDataField {
     if (possibleOptions) {
       options = possibleOptions.map(option => { return { key: option, text: option }; });
     }
-    return this.getCustomCollectionDropDown(options, field, row, updateFunction, null, customOnChange);
+    return this.getCustomCollectionDropDown(options.sort(), field, row, updateFunction, null, customOnChange);
   }
 
-  public static getFieldPickerByList(possibleOptions: Array<IListField>, field: ICustomCollectionField, row: IListData, updateFunction: any): JSX.Element {
+  public static getFieldPickerByList(possibleOptions: Array<IListField>, field: ICustomCollectionField, row: IListData, updateFunction: any, customOptions?: Array<ICustomOption>): JSX.Element {
     let options = [];
     if (possibleOptions) {
       options = possibleOptions.map(option => { return { key: option.InternalName, text: option.Title }; });
     }
-    return this.getCustomCollectionDropDown(options, field, row, updateFunction);
+    if (customOptions) {
+      customOptions.map(option => {
+        options.push({
+          key: option.Key,
+          text: option.Option
+        });
+      });
+    }
+    return this.getCustomCollectionDropDown(options.sort(), field, row, updateFunction);
   }
 }

@@ -3,6 +3,8 @@ export interface IListFieldData {
   ListSourceField: string;
   SourceField: string;
   TargetField: string;
+  Order: number;
+  sortIdx: number;
 }
 
 export interface IListData {
@@ -33,4 +35,9 @@ export interface IRedirectData {
   SiteCollectionSource: string;
   ListSourceField: string;
   Url: string;
+}
+
+export interface ICustomOption {
+  Key: string;
+  Option: string;
 }

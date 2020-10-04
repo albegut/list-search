@@ -11,7 +11,7 @@ import { PropertyFieldCollectionData, CustomCollectionFieldType } from '@pnp/spf
 import { IListSearchProps } from './components/IListSearchProps';
 import ListSearch from './components/ListSearch';
 import * as strings from 'ListSearchWebPartStrings';
-import { IListFieldData, IListData, IDisplayFieldData, ICompleteModalData, IRedirectData } from './model/IListConfigProps';
+import { IListFieldData, IListData, IDisplayFieldData, ICompleteModalData, IRedirectData, ICustomOption } from './model/IListConfigProps';
 import { IPropertyFieldSite, PropertyFieldSitePicker, } from '@pnp/spfx-property-controls/lib/PropertyFieldSitePicker';
 import { PropertyFieldNumber } from '@pnp/spfx-property-controls/lib/PropertyFieldNumber';
 import { Placeholder } from "@pnp/spfx-controls-react/lib/Placeholder";
@@ -30,6 +30,7 @@ import { IListField } from './model/IListField';
 import { IDynamicDataPropertyDefinition } from '@microsoft/sp-dynamic-data';
 import { IDynamicDataCallables } from '@microsoft/sp-dynamic-data';
 import { IDynamicItem } from './model/IDynamicItem';
+import { PropertyPaneWebPartInformation } from '@pnp/spfx-property-controls/lib/PropertyPaneWebPartInformation';
 
 
 
@@ -189,6 +190,15 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
     }
   }
 
+  private OrderfieldsCollectionData() {
+    if (this.properties.listsCollectionData && this.properties.fieldCollectionData) {
+      this.properties.fieldCollectionData = this.properties.fieldCollectionData.map(element => {
+        let founded = this.properties.listsCollectionData.find(source => source.ListSourceField === element.ListSourceField && source.SiteCollectionSource === element.SiteCollectionSource);
+        return { Order: founded.sortIdx, ...element };
+      });
+    }
+  }
+
   public render(): void {
     let renderElement = null;
 
@@ -226,7 +236,7 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
         {
           Sites: this.properties.sites,
           displayFieldsCollectionData: this.properties.displayFieldsCollectionData,
-          fieldsCollectionData: this.properties.fieldCollectionData,
+          fieldsCollectionData: this.properties.fieldCollectionData.sort((a, b) => a.Order - b.Order),
           listsCollectionData: this.properties.listsCollectionData.sort(),
           ShowListName: this.properties.ShowListName,
           ListNameTitle: this.properties.ListNameTitle,
@@ -275,7 +285,7 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
   }
 
   protected get dataVersion(): Version {
-    return Version.parse('1.0');
+    return Version.parse(this.context.manifest.version);
   }
 
   protected get disableReactivePropertyChanges(): boolean {
@@ -298,6 +308,8 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
           this.properties.fieldCollectionData = this.properties.fieldCollectionData && this.properties.fieldCollectionData.filter(modalField => {
             return newValue.filter(option => option.SiteCollectionSource === modalField.SiteCollectionSource && option.ListSourceField === modalField.ListSourceField).length > 0;
           });
+
+          this.OrderfieldsCollectionData();
 
           break;
         }
@@ -379,7 +391,13 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
           }
           break;
         }
-
+      case "fieldCollectionData":
+        {
+          if (newValue) {
+            this.OrderfieldsCollectionData();
+          }
+          break;
+        }
     }
   }
 
@@ -429,6 +447,10 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
     }
 
     return options;
+  }
+
+  private getCustomsOptions(): Array<ICustomOption> {
+    return [{ Key: "SiteUrl", Option: "Site information" }, { Key: "ListName", Option: "List Name" }];
   }
 
 
@@ -577,7 +599,7 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
           onCustomRender: (field, value, onUpdate, item, itemId, onError) => {
             if (item.SiteCollectionSource && item.ListSourceField) {
               return (
-                CustomCollectionDataField.getFieldPickerByList(this.ListsFields[item.SiteCollectionSource][item.ListSourceField], field, item, onUpdate)
+                CustomCollectionDataField.getFieldPickerByList(this.ListsFields[item.SiteCollectionSource][item.ListSourceField], field, item, onUpdate, this.getCustomsOptions())
               );
             }
           }
@@ -663,7 +685,7 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
                       title: strings.CollectionDataSiteCollectionTitle,
                       type: CustomCollectionFieldType.custom,
                       onCustomRender: (field, value, onUpdate, item, itemId, onError) => {
-                        let aa = this.properties.sites.map(site => {return site.url});
+                        let aa = this.properties.sites.map(site => { return site.url });
                         return (
                           CustomCollectionDataField.getPickerByStringOptions(aa, field, item, onUpdate, this.handleSourceSiteChange)
                         );
@@ -728,7 +750,6 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
                 onClickRedirectIdQueryParamProperyPane
               ]
             }
-
           ]
         },
         {
@@ -897,6 +918,22 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
               ],
             }
           ]
+        },
+        {
+          header: {
+            description: strings.InformationPropertiesGroupName
+          },
+          groups: [
+            {
+              groupName: strings.AboutPropertiesGroupName,
+              groupFields: [
+                PropertyPaneWebPartInformation({
+                  description: `Version:  ${this.dataVersion}`,
+                  key: 'webPartInfoId'
+                })
+              ],
+            }
+          ]
         }
       ]
     };
@@ -926,11 +963,9 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
 
   private handleSourceSiteChange(row: IListData, fieldId: string, optionKey: string, updateFunction: any, errorFunction: any) {
     updateFunction(fieldId, optionKey);
-    if(row)
-    {
+    if (row) {
       let savedValue = this.properties.listsCollectionData.find(element => element.uniqueId === row.uniqueId);
-      if(savedValue && savedValue.SiteCollectionSource != optionKey)
-      {
+      if (savedValue && savedValue.SiteCollectionSource != optionKey) {
         row.ListSourceField = "";
       }
     }
