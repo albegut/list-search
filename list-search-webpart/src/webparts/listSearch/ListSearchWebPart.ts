@@ -236,7 +236,7 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
         {
           Sites: this.properties.sites,
           displayFieldsCollectionData: this.properties.displayFieldsCollectionData,
-          fieldsCollectionData: this.properties.fieldCollectionData.sort((a, b) => a.Order - b.Order),
+          fieldsCollectionData: this.properties.fieldCollectionData,
           listsCollectionData: this.properties.listsCollectionData.sort(),
           ShowListName: this.properties.ShowListName,
           ListNameTitle: this.properties.ListNameTitle,
