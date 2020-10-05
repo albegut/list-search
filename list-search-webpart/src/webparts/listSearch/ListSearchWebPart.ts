@@ -193,8 +193,8 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
   private OrderfieldsCollectionData() {
     if (this.properties.listsCollectionData && this.properties.fieldCollectionData) {
       this.properties.fieldCollectionData = this.properties.fieldCollectionData.map(element => {
-        let founded = this.properties.listsCollectionData.find(source => source.ListSourceField === element.ListSourceField && source.SiteCollectionSource === element.SiteCollectionSource);
-        return { Order: founded.sortIdx, ...element };
+        element.Order = this.properties.listsCollectionData.find(source => source.ListSourceField === element.ListSourceField && source.SiteCollectionSource === element.SiteCollectionSource).sortIdx;
+        return element;
       });
     }
   }
@@ -236,7 +236,7 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
         {
           Sites: this.properties.sites,
           displayFieldsCollectionData: this.properties.displayFieldsCollectionData,
-          fieldsCollectionData: this.properties.fieldCollectionData,
+          fieldsCollectionData: this.properties.fieldCollectionData.sort((prev, next) => prev.Order - next.Order),
           listsCollectionData: this.properties.listsCollectionData.sort(),
           ShowListName: this.properties.ShowListName,
           ListNameTitle: this.properties.ListNameTitle,
@@ -320,6 +320,9 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
             this.properties.displayFieldsCollectionData = this.properties.displayFieldsCollectionData.filter(field => !field.IsListTitle);
           }
           else {
+            if (this.properties.displayFieldsCollectionData == undefined) {
+              this.properties.displayFieldsCollectionData = [];
+            }
             if (!this.properties.displayFieldsCollectionData.some(field => field.IsListTitle)) {
               this.properties.displayFieldsCollectionData.push({ ColumnTitle: "ListName", IsListTitle: true, IsSiteTitle: false, Searcheable: true });
             }
@@ -333,6 +336,9 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
             this.properties.displayFieldsCollectionData = this.properties.displayFieldsCollectionData.filter(field => !field.IsSiteTitle);
           }
           else {
+            if (this.properties.displayFieldsCollectionData == undefined) {
+              this.properties.displayFieldsCollectionData = [];
+            }
             if (!this.properties.displayFieldsCollectionData.some(field => field.IsSiteTitle)) {
               this.properties.displayFieldsCollectionData.push({ ColumnTitle: "Site", IsListTitle: false, IsSiteTitle: true, Searcheable: true });
             }
@@ -452,7 +458,6 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
   private getCustomsOptions(): Array<ICustomOption> {
     return [{ Key: "SiteUrl", Option: "Site information" }, { Key: "ListName", Option: "List Name" }];
   }
-
 
   protected getPropertyPaneConfiguration(): IPropertyPaneConfiguration {
 
@@ -963,7 +968,7 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
 
   private handleSourceSiteChange(row: IListData, fieldId: string, optionKey: string, updateFunction: any, errorFunction: any) {
     updateFunction(fieldId, optionKey);
-    if (row) {
+    if (row && this.properties.listsCollectionData) {
       let savedValue = this.properties.listsCollectionData.find(element => element.uniqueId === row.uniqueId);
       if (savedValue && savedValue.SiteCollectionSource != optionKey) {
         row.ListSourceField = "";

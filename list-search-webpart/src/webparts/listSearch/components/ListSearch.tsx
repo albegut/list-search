@@ -378,16 +378,17 @@ export default class ISecondWebPart extends React.Component<IListSearchProps, IL
     let body: JSX.Element;
     if (this.props.clickIsSimpleModal) {
       body = <div className={styles.bodyModal}>
-        {this.props.fieldsCollectionData.filter(f => f.SiteCollectionSource == this.state.selectedItem.SiteUrl).map(val => {
-          return <>
-            <div className={styles.propertyModal}>
-              {val.TargetField}
-            </div>
-            <div>
-              {this.state.selectedItem[val.TargetField]}
-            </div>
-          </>;
-        })}
+        {this.props.fieldsCollectionData.filter(f => f.SiteCollectionSource == this.state.selectedItem.SiteUrl &&
+          f.ListSourceField === this.state.selectedItem.ListName).map(val => {
+            return <>
+              <div className={styles.propertyModal}>
+                {val.TargetField}
+              </div>
+              <div>
+                {this.state.selectedItem[val.TargetField]}
+              </div>
+            </>;
+          })}
       </div>;
     }
     else {
