@@ -85,7 +85,7 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
     this.saveSiteCollectionListsFields = this.saveSiteCollectionListsFields.bind(this);
     this.setNewListFieds = this.setNewListFieds.bind(this);
     this.handleSourceSiteChange = this.handleSourceSiteChange.bind(this);
-
+    this.updateFieldType = this.updateFieldType.bind(this);
   }
 
   protected async onInit(): Promise<void> {
@@ -456,7 +456,7 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
   }
 
   private getCustomsOptions(): Array<ICustomOption> {
-    return [{ Key: "SiteUrl", Option: "Site information" }, { Key: "ListName", Option: "List Name" }];
+    return [{ Key: "SiteUrl", Option: "Site information", CustomData: "String" }, { Key: "ListName", Option: "List Name", CustomData: "String" }];
   }
 
   protected getPropertyPaneConfiguration(): IPropertyPaneConfiguration {
@@ -604,7 +604,7 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
           onCustomRender: (field, value, onUpdate, item, itemId, onError) => {
             if (item.SiteCollectionSource && item.ListSourceField) {
               return (
-                CustomCollectionDataField.getFieldPickerByList(this.ListsFields[item.SiteCollectionSource][item.ListSourceField], field, item, onUpdate, this.getCustomsOptions())
+                CustomCollectionDataField.getFieldPickerByList(this.ListsFields[item.SiteCollectionSource][item.ListSourceField], field, item, onUpdate, this.updateFieldType, this.getCustomsOptions())
               );
             }
           }
@@ -857,7 +857,7 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
                       onCustomRender: (field, value, onUpdate, item, itemId, onError) => {
                         if (item.SiteCollectionSource && item.ListSourceField) {
                           return (
-                            CustomCollectionDataField.getFieldPickerByList(this.ListsFields[item.SiteCollectionSource][item.ListSourceField], field, item, onUpdate)
+                            CustomCollectionDataField.getFieldPickerByList(this.ListsFields[item.SiteCollectionSource][item.ListSourceField], field, item, onUpdate, this.updateFieldType)
                           );
                         }
                       }
@@ -956,21 +956,26 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
     this.ListsFields[site][list] = fields;
   }
 
-  private async setNewListFieds(row: IListData, fieldId: string, optionKey: string, updateFunction: any, errorFunction: any) {
-    updateFunction(fieldId, optionKey);
+  private async setNewListFieds(row: IListData, fieldId: string, option: IDropdownOption, updateFunction: any, errorFunction: any) {
+    updateFunction(fieldId, option.key);
     if (this.ListsFields[row.SiteCollectionSource] == undefined) {
       this.ListsFields[row.SiteCollectionSource] = {};
     }
     let service: ListService = new ListService(row.SiteCollectionSource);
-    let fields: IListField[] = await service.getListFields(optionKey);
-    this.ListsFields[row.SiteCollectionSource][optionKey] = fields;
+    let fields: IListField[] = await service.getListFields(option.key.toString());
+    this.ListsFields[row.SiteCollectionSource][option.key] = fields;
   }
 
-  private handleSourceSiteChange(row: IListData, fieldId: string, optionKey: string, updateFunction: any, errorFunction: any) {
-    updateFunction(fieldId, optionKey);
+  private updateFieldType(row: any, fieldId: string, option: any, updateFunction: any) {
+    updateFunction(fieldId, option.key);
+    row.FieldType = option.FieldType;
+  }
+
+  private handleSourceSiteChange(row: IListData, fieldId: string, option: IDropdownOption, updateFunction: any, errorFunction: any) {
+    updateFunction(fieldId, option.key);
     if (row && this.properties.listsCollectionData) {
       let savedValue = this.properties.listsCollectionData.find(element => element.uniqueId === row.uniqueId);
-      if (savedValue && savedValue.SiteCollectionSource != optionKey) {
+      if (savedValue && savedValue.SiteCollectionSource != option.key) {
         row.ListSourceField = "";
       }
     }

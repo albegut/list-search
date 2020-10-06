@@ -12,6 +12,7 @@ import XMLParser from 'react-xml-parser';
 import { IWeb, Web } from '@pnp/sp/webs';
 import { IListField } from '../model/IListField';
 
+
 export default class ListService implements IListService {
   private web: IWeb;
   private baseUrl: string;
@@ -91,7 +92,7 @@ export default class ListService implements IListService {
 
   public async getListFields(listTitle: string): Promise<Array<IListField>> {
     try {
-      return this.web.lists.getByTitle(listTitle).fields.select('Title,InternalName').get();
+      return this.web.lists.getByTitle(listTitle).fields.select('Title,InternalName,TypeAsString').get();
     } catch (error) {
       return Promise.reject(error);
     }
@@ -138,7 +139,6 @@ export default class ListService implements IListService {
 
       return XmlParser.toString(xml);
     } catch (error) {
-      console.error(`getCamlQueryWithViewFieldsAndRowLimit -> ${error.message}`);
       return `getCamlQueryWithViewFieldsAndRowLimit -> ${error.message}`;
     }
 

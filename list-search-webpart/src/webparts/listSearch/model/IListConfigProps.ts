@@ -5,6 +5,7 @@ export interface IListFieldData {
   TargetField: string;
   Order: number;
   sortIdx: number;
+  FieldType: SharePointFieldTypes;
 }
 
 export interface IListData {
@@ -29,6 +30,7 @@ export interface ICompleteModalData {
   ListSourceField: string;
   SourceField: string;
   TargetField: string;
+  FieldType: SharePointFieldTypes;
 }
 
 export interface IRedirectData {
@@ -40,4 +42,29 @@ export interface IRedirectData {
 export interface ICustomOption {
   Key: string;
   Option: string;
+  CustomData: string;
+}
+
+export enum SharePointFieldTypes {
+  Text = 0,
+  Note,
+  Choice,
+  Integer,
+  Number,
+  Money,
+  DateTime,
+  Lookup,
+  LookupMulti,
+  Boolean,
+  User,
+  UserMulti,
+  Url,
+  Calculated,
+  Image,
+  Taxonomy,
+  Computed,
+  Attachments,
+  Counter,
+  ContentTypeId,
+  Guid,
 }

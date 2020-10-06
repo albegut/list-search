@@ -30,13 +30,12 @@ import SessionStorage from '../services/SessionStorageService';
 import { ISessionStorageElement } from '../model/ISessiongStorageElement';
 import { Shimmer } from 'office-ui-fabric-react/lib/Shimmer';
 import { Modal } from 'office-ui-fabric-react/lib/Modal';
+import { Log } from '@microsoft/sp-core-library';
 
-
-
-
+const LOG_SOURCE = "IListdSearchWebPart";
 const filterIcon: IIconProps = { iconName: 'Filter' };
 
-export default class ISecondWebPart extends React.Component<IListSearchProps, IListSearchState> {
+export default class IListdSearchWebPart extends React.Component<IListSearchProps, IListSearchState> {
   private columns: IColumn[] = [];
   private keymapQuerys: {} = {};
   constructor(props: IListSearchProps, state: IListSearchState) {
@@ -69,6 +68,15 @@ export default class ISecondWebPart extends React.Component<IListSearchProps, IL
     this.getData();
   }
 
+  private SetError(error: Error, methodName: string) {
+    Log.warn(LOG_SOURCE, `${methodName} set an error`, this.props.Context.serviceScope);
+    Log.error(LOG_SOURCE, error, this.props.Context.serviceScope);
+    this.setState({
+      errorMsg: `Error ${error.message}`,
+      isLoading: false,
+    });
+  }
+
   private async getData() {
     try {
       let result: any[] = [];
@@ -94,10 +102,7 @@ export default class ISecondWebPart extends React.Component<IListSearchProps, IL
 
       this.setState({ items: result, filterItems: result, isLoading: false });
     } catch (error) {
-      this.setState({
-        errorMsg: `readItemsError ${error.message}`,
-        isLoading: false,
-      });
+      this.SetError(error, "getData");
     }
   }
 
@@ -158,30 +163,35 @@ export default class ISecondWebPart extends React.Component<IListSearchProps, IL
   }
 
   public filterColumnListItems(propertyName: string, propertyValue: string) {
-    let isNewFilter: boolean = true;
-    let clearFilter: boolean = false;
-    let isMoreRestricted: boolean = false;
-    let newFitlers: IColumnFilter[] = this.state.columnFilters.filter(filter => {
-      if (filter.columnName === propertyName) {
-        isMoreRestricted = filter.filterToApply.length < propertyValue.length;
-        filter.filterToApply = propertyValue;
-        isNewFilter = false;
+    try {
+      let isNewFilter: boolean = true;
+      let clearFilter: boolean = false;
+      let isMoreRestricted: boolean = false;
+      let newFitlers: IColumnFilter[] = this.state.columnFilters.filter(filter => {
+        if (filter.columnName === propertyName) {
+          isMoreRestricted = filter.filterToApply.length < propertyValue.length;
+          filter.filterToApply = propertyValue;
+          isNewFilter = false;
 
-      }
-      if (filter.filterToApply && filter.filterToApply.length > 0) { //Remove empty filters
-        return filter;
-      }
-      else {
-        clearFilter = true;
-      }
-    });
+        }
+        if (filter.filterToApply && filter.filterToApply.length > 0) { //Remove empty filters
+          return filter;
+        }
+        else {
+          clearFilter = true;
+        }
+      });
 
-    if (isNewFilter) newFitlers.push({ columnName: propertyName, filterToApply: propertyValue });
+      if (isNewFilter) newFitlers.push({ columnName: propertyName, filterToApply: propertyValue });
 
-    let itemsToRefine = (clearFilter || this.state.generalFilter) ? this.filterListItemsByGeneralFilter(this.state.generalFilter, true, false)
-      : (isMoreRestricted ? this.state.filterItems : this.state.items);
+      let itemsToRefine = (clearFilter || this.state.generalFilter) ? this.filterListItemsByGeneralFilter(this.state.generalFilter, true, false)
+        : (isMoreRestricted ? this.state.filterItems : this.state.items);
 
-    this.filterListItemsByColumnsFilter(itemsToRefine, newFitlers, false);
+      this.filterListItemsByColumnsFilter(itemsToRefine, newFitlers, false);
+    }
+    catch (error) {
+      this.SetError(error, "filterColumnListItems")
+    }
   }
 
   public filterListItemsByColumnsFilter(itemsToRefine: any[], newFilters: IColumnFilter[], isFromClearGeneralFilter: boolean) {
@@ -237,7 +247,12 @@ export default class ISecondWebPart extends React.Component<IListSearchProps, IL
   }
 
   public clearGeneralFilter() {
-    this.filterListItemsByColumnsFilter(this.state.items, this.state.columnFilters, true);
+    try {
+      this.filterListItemsByColumnsFilter(this.state.items, this.state.columnFilters, true);
+    }
+    catch (error) {
+      this.SetError(error, "clearGeneralFilter");
+    }
   }
 
 
@@ -312,30 +327,34 @@ export default class ISecondWebPart extends React.Component<IListSearchProps, IL
   }
 
   public GetOnClickAction() {
-    if (this.props.clickIsSimpleModal || this.props.clickIsCompleteModal) {
-      return this.GetModal();
-    }
-    else {
-      if (this.props.clickIsRedirect) {
-        let config = this.props.redirectData.filter(f => f.SiteCollectionSource == this.state.selectedItem.SiteUrl && f.ListSourceField == this.state.selectedItem.ListName);
-        if (config && config.length > 0) {
-          if (this.props.onRedirectIdQuery) {
-            var url = new URL(config[0].Url);
-            url.searchParams.append(this.props.onRedirectIdQuery, this.state.selectedItem.Id);
-            window.location.replace(url.toString());
-          }
-          else {
-            window.location.replace(`${config[0].Url}`);
-          }
-        }
+    try {
+      if (this.props.clickIsSimpleModal || this.props.clickIsCompleteModal) {
+        return this.GetModal();
       }
       else {
-        this.props.onSelectedItem({
-          webUrl: this.state.selectedItem.SiteUrl,
-          listName: this.state.selectedItem.ListName,
-          itemId: this.state.selectedItem.Id
-        });
+        if (this.props.clickIsRedirect) {
+          let config = this.props.redirectData.filter(f => f.SiteCollectionSource == this.state.selectedItem.SiteUrl && f.ListSourceField == this.state.selectedItem.ListName);
+          if (config && config.length > 0) {
+            if (this.props.onRedirectIdQuery) {
+              var url = new URL(config[0].Url);
+              url.searchParams.append(this.props.onRedirectIdQuery, this.state.selectedItem.Id);
+              window.location.replace(url.toString());
+            }
+            else {
+              window.location.replace(`${config[0].Url}`);
+            }
+          }
+        }
+        else {
+          this.props.onSelectedItem({
+            webUrl: this.state.selectedItem.SiteUrl,
+            listName: this.state.selectedItem.ListName,
+            itemId: this.state.selectedItem.Id
+          });
+        }
       }
+    } catch (error) {
+      this.SetError(error, "GetOnClickAction")
     }
   }
 
