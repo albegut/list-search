@@ -31,6 +31,9 @@ import { ISessionStorageElement } from '../model/ISessiongStorageElement';
 import { Shimmer } from 'office-ui-fabric-react/lib/Shimmer';
 import { Modal } from 'office-ui-fabric-react/lib/Modal';
 import { Log } from '@microsoft/sp-core-library';
+import { IBaseFieldData, SharePointFieldTypes } from '../model/IListConfigProps';
+import { Toggle } from 'office-ui-fabric-react/lib/Toggle';
+
 
 const LOG_SOURCE = "IListdSearchWebPart";
 const filterIcon: IIconProps = { iconName: 'Filter' };
@@ -388,7 +391,9 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
               onClick={this._closeModalGlosarioModal}
             />}
         </div>
-        {this.getBodyModal()}
+        <div className={styles.bodyModal}>
+          {this.getBodyModal()}
+        </div>
       </Modal>
     return modal;
   }
@@ -396,22 +401,22 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
   private getBodyModal() {
     let body: JSX.Element;
     if (this.props.clickIsSimpleModal) {
-      body = <div className={styles.bodyModal}>
-        {this.props.fieldsCollectionData.filter(f => f.SiteCollectionSource == this.state.selectedItem.SiteUrl &&
-          f.ListSourceField === this.state.selectedItem.ListName).map(val => {
-            return <>
-              <div className={styles.propertyModal}>
-                {val.TargetField}
-              </div>
-              <div>
-                {this.state.selectedItem[val.TargetField]}
-              </div>
-            </>;
-          })}
-      </div>;
+      body = <>
+        {
+          this.props.fieldsCollectionData.filter(f => f.SiteCollectionSource == this.state.selectedItem.SiteUrl &&
+            f.ListSourceField === this.state.selectedItem.ListName).map(val => {
+              return <>
+                <div className={styles.propertyModal}>
+                  {val.TargetField}
+                </div>
+                {this.GetRenderByFieldType(this.state.selectedItem, val)}
+              </>;
+            })
+        }
+      </>;
     }
     else {
-      body = <div className={styles.bodyModal}>
+      body = <>
         {this.props.completeModalFields.filter(field => field.SiteCollectionSource == this.state.selectedItem.SiteUrl &&
           field.ListSourceField == this.state.selectedItem.ListName).map(val => {
             return <>
@@ -424,7 +429,7 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
             </>;
           })
         }
-      </div>;
+      </>;
     }
     return body;
   }
@@ -443,6 +448,27 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
       <>
         {defaultRender({ ...detailrow })}
       </>
+  }
+
+  private GetRenderByFieldType(item: any, config: IBaseFieldData): JSX.Element {
+    let result;
+    switch (config.FieldType) {
+      case "Attachments":
+        result = <>
+          {item[config.TargetField]}
+        </>
+        break;
+      case "Boolean":
+        result = <Toggle checked={item[config.TargetField]} disabled />;
+        break;
+      default:
+        result = <>
+          {item[config.TargetField]}
+        </>;
+        break;
+    }
+
+    return result;
   }
 
 

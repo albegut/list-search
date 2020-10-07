@@ -92,7 +92,7 @@ export default class ListService implements IListService {
 
   public async getListFields(listTitle: string): Promise<Array<IListField>> {
     try {
-      return this.web.lists.getByTitle(listTitle).fields.select('Title,InternalName,TypeAsString').get();
+      return this.web.lists.getByTitle(listTitle).fields.filter(`substringof('${encodeURIComponent("OData__")}',EntityPropertyName) eq false`).select('EntityPropertyName,Title,InternalName,TypeAsString').get();
     } catch (error) {
       return Promise.reject(error);
     }

@@ -1,11 +1,15 @@
-export interface IListFieldData {
+export interface IBaseFieldData{
   SiteCollectionSource: string;
   ListSourceField: string;
   SourceField: string;
   TargetField: string;
+  FieldType: string;
+}
+
+
+export interface IListFieldData extends IBaseFieldData{
   Order: number;
   sortIdx: number;
-  FieldType: SharePointFieldTypes;
 }
 
 export interface IListData {
@@ -25,12 +29,8 @@ export interface IDisplayFieldData {
   Searcheable: boolean;
 }
 
-export interface ICompleteModalData {
-  SiteCollectionSource: string;
-  ListSourceField: string;
-  SourceField: string;
-  TargetField: string;
-  FieldType: SharePointFieldTypes;
+export interface ICompleteModalData extends IBaseFieldData{
+
 }
 
 export interface IRedirectData {
@@ -45,6 +45,31 @@ export interface ICustomOption {
   CustomData: string;
 }
 
+export type  SharePointFieldTypes = {
+  Text:'Text',
+  Note:'Note',
+  Choice:'Choice',
+  Integer:'Integer',
+  Number:'Number',
+  Money:'Money',
+  DateTime:'DateTime',
+  Lookup:'Lookup',
+  LookupMulti:'LookupMulti',
+  Boolean:'Boolean',
+  User:'Note',
+  UserMulti:'Note',
+  Url:'Note',
+  Calculated:'Note',
+  Image:'Note',
+  Taxonomy:'Note',
+  Computed:'Note',
+  Attachments:'Note',
+  Counter:'Note',
+  ContentTypeId:'Note',
+  Guid:'Note',
+}
+
+/*
 export enum SharePointFieldTypes {
   Text = 0,
   Note,
@@ -68,3 +93,4 @@ export enum SharePointFieldTypes {
   ContentTypeId,
   Guid,
 }
+*/

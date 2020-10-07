@@ -292,7 +292,7 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
     return true;
   }
 
-  protected async onPropertyPaneFieldChanged(propertyPath: string, oldValue: any, newValue: any, sitesLists?: {}, saveSitesInfoCallback?: any) {
+  protected async onPropertyPaneFieldChanged(propertyPath: string, oldValue: any, newValue: any) {
     super.onPropertyPaneFieldChanged(propertyPath, oldValue, newValue);
     switch (propertyPath) {
       case "listsCollectionData":
@@ -361,7 +361,7 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
                 if (oldValue.indexOf(site) < 0) {
                   let service: ListService = new ListService(site.url);
                   let lists = await service.getSiteListsTitle();
-                  saveSitesInfoCallback(site.url, lists.map(listInfo => { return listInfo.Title; }));
+                  this.saveSiteCollectionLists(site.url, lists.map(listInfo => { return listInfo.Title; }))
                 }
               });
             }
@@ -673,7 +673,7 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
                   initialSites: this.properties.sites || [],
                   context: this.context,
                   multiSelect: true,
-                  onPropertyChange: (propertyPath, oldValue, newValue) => this.onPropertyPaneFieldChanged(propertyPath, oldValue, newValue, this.sitesLists, this.saveSiteCollectionLists),
+                  onPropertyChange: (propertyPath, oldValue, newValue) => this.onPropertyPaneFieldChanged(propertyPath, oldValue, newValue),
                   properties: this.properties,
                   key: 'sitesFieldId',
                 }),
