@@ -31,8 +31,12 @@ import { ISessionStorageElement } from '../model/ISessiongStorageElement';
 import { Shimmer } from 'office-ui-fabric-react/lib/Shimmer';
 import { Modal } from 'office-ui-fabric-react/lib/Modal';
 import { Log } from '@microsoft/sp-core-library';
-import { IBaseFieldData, SharePointFieldTypes } from '../model/IListConfigProps';
+import { IBaseFieldData } from '../model/IListConfigProps';
 import { Toggle } from 'office-ui-fabric-react/lib/Toggle';
+import { SharePointType } from '../model/ISharePointFieldTypes';
+import { Dropdown, IDropdownOption } from 'office-ui-fabric-react/lib/Dropdown';
+
+
 
 
 const LOG_SOURCE = "IListdSearchWebPart";
@@ -135,7 +139,7 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
 
   private AddColumnsToDisplay(): void {
     this.props.displayFieldsCollectionData.sort().map(column => {
-      this.columns.push({ key: column.ColumnTitle, name: column.ColumnTitle, fieldName: column.ColumnTitle, minWidth: 100, maxWidth: column.ColumnWidth || undefined, isResizable: true });
+      this.columns.push({ key: column.ColumnTitle, name: column.ColumnTitle, fieldName: column.ColumnTitle, minWidth: 100, maxWidth: column.ColumnWidth || undefined, isResizable: true, data: column.SPFieldType });
     });
   }
 
@@ -145,20 +149,20 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
       if (this.keymapQuerys[item.SiteCollectionSource] != undefined) {
         if (this.keymapQuerys[item.SiteCollectionSource][item.ListSourceField] != undefined) {
           if (this.keymapQuerys[item.SiteCollectionSource][item.ListSourceField].fields.filter(field => field.originalField === item.SourceField).length == 0) {
-            this.keymapQuerys[item.SiteCollectionSource][item.ListSourceField].fields.push({ originalField: item.SourceField, newField: item.TargetField });
+            this.keymapQuerys[item.SiteCollectionSource][item.ListSourceField].fields.push({ originalField: item.SourceField, newField: item.TargetField, fieldType: item.SPFieldType });
           }
         }
         else {
           let listQueryInfo = this.props.listsCollectionData.filter(list => list.SiteCollectionSource == item.SiteCollectionSource && list.ListSourceField == item.ListSourceField);
 
-          let newQueryListItem: IListSearchListQuery = { list: item.ListSourceField, fields: [{ originalField: item.SourceField, newField: item.TargetField }], camlQuery: listQueryInfo.length > 0 && listQueryInfo[0].Query, viewName: listQueryInfo.length > 0 && listQueryInfo[0].ListView };
+          let newQueryListItem: IListSearchListQuery = { list: item.ListSourceField, fields: [{ originalField: item.SourceField, newField: item.TargetField, fieldType: item.SPFieldType }], camlQuery: listQueryInfo.length > 0 && listQueryInfo[0].Query, viewName: listQueryInfo.length > 0 && listQueryInfo[0].ListView };
           this.keymapQuerys[item.SiteCollectionSource][item.ListSourceField] = newQueryListItem;
         }
       }
       else {
         let listQueryInfo = this.props.listsCollectionData.filter(list => list.SiteCollectionSource == item.SiteCollectionSource && list.ListSourceField == item.ListSourceField);
 
-        let newQueryListItem: IListSearchListQuery = { list: item.ListSourceField, fields: [{ originalField: item.SourceField, newField: item.TargetField }], camlQuery: listQueryInfo.length > 0 && listQueryInfo[0].Query, viewName: listQueryInfo.length > 0 && listQueryInfo[0].ListView };
+        let newQueryListItem: IListSearchListQuery = { list: item.ListSourceField, fields: [{ originalField: item.SourceField, newField: item.TargetField, fieldType: item.SPFieldType }], camlQuery: listQueryInfo.length > 0 && listQueryInfo[0].Query, viewName: listQueryInfo.length > 0 && listQueryInfo[0].ListView };
         this.keymapQuerys[item.SiteCollectionSource] = {};
         this.keymapQuerys[item.SiteCollectionSource][item.ListSourceField] = newQueryListItem;
       }
@@ -450,16 +454,45 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
       </>
   }
 
+  private _renderItemColumn(item: any, index: number, column: IColumn) {
+    const fieldContent = item[column.fieldName] as string;
+
+    switch (column.data) {
+      case SharePointType.User:
+      case SharePointType.UserMulti:
+      case SharePointType.Lookup:
+      case SharePointType.LookupMulti:
+      case SharePointType.Taxonomy:
+      case SharePointType.TaxonomyMulti:
+      case SharePointType.Url:
+        return <span>"Custom"</span>;
+      default:
+        return <span>{fieldContent}</span>;
+    }
+  }
   private GetRenderByFieldType(item: any, config: IBaseFieldData): JSX.Element {
     let result;
-    switch (config.FieldType) {
-      case "Attachments":
+
+    switch (config.SPFieldType) {
+      case SharePointType.Text:
+      case SharePointType.Note:
         result = <>
           {item[config.TargetField]}
         </>
         break;
-      case "Boolean":
-        result = <Toggle checked={item[config.TargetField]} disabled />;
+      case SharePointType.Boolean:
+        result = <Toggle checked={item[config.TargetField]} />;
+        break;
+      case SharePointType.Choice:
+        const options: IDropdownOption[] = [
+          { key: item[config.TargetField], text: item[config.TargetField] },
+        ];
+        <Dropdown
+          label="Disabled example with defaultSelectedKey"
+          defaultSelectedKey="broccoli"
+          options={options}
+          disabled={true}
+        />
         break;
       default:
         result = <>
@@ -506,7 +539,9 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
                         className={styles.searchListData}
                         selectionMode={SelectionMode.none}
                         onItemInvoked={this.props.clickEnabled && !this.props.oneClickOption ? this._onItemInvoked : null}
-                        onRenderRow={(props, defaultRender) => this.getOnRowClickRender(props, defaultRender)} />
+                        onRenderRow={(props, defaultRender) => this.getOnRowClickRender(props, defaultRender)}
+                        onRenderItemColumn={this._renderItemColumn}
+                      />
                       {this.props.ShowPagination &&
                         <div className={styles.paginationContainer}>
                           <div className={styles.paginationContainer__paginationContainer}>

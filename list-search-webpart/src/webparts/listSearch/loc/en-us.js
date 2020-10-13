@@ -30,6 +30,7 @@ define([], function () {
     CollectionDataFieldHeader: "Configure the fields properties",
     CollectionDataFieldsButton: "Configure fields",
     CollectionDataFieldsSearchable: "Searcheable in general filter",
+    CollectionDataFieldsType: "Field render type",
     DisplayFieldsPropertiesGroup: "Display Fields",
     GeneralFieldsPropertiesShowListName: "Show list title",
     GeneralFieldsPropertiesShowSiteInformation: "Show site information",

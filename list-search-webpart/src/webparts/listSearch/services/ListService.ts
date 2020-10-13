@@ -11,6 +11,7 @@ import { ICamlQueryXml } from '../model/ICamlQueryXml';
 import XMLParser from 'react-xml-parser';
 import { IWeb, Web } from '@pnp/sp/webs';
 import { IListField } from '../model/IListField';
+import { SharePointType } from '../model/ISharePointFieldTypes';
 
 
 export default class ListService implements IListService {
@@ -20,6 +21,9 @@ export default class ListService implements IListService {
   constructor(siteUrl: string) {
     sp.setup({
       sp: {
+        headers: {
+          Accept: 'application/json;odata=nometadata'
+        },
         baseUrl: siteUrl
       },
     });
@@ -27,9 +31,29 @@ export default class ListService implements IListService {
     this.baseUrl = siteUrl;
   }
 
+  private GetViewFieldsWithId(listQueryOptions: IListSearchListQuery): string[] {
+    let viewFields: string[] = listQueryOptions.fields.map(field => {
+      switch (field.fieldType) {
+        case SharePointType.Lookup:
+        case SharePointType.LookupMulti:
+        case SharePointType.User:
+        case SharePointType.UserMulti:
+          {
+            return `${field.originalField}Id`;
+          }
+        default:
+          {
+            return field.originalField;
+          }
+      }
+    });
+
+    return viewFields;
+  }
+
   public async getListItems(listQueryOptions: IListSearchListQuery, listPropertyName: string, sitePropertyName: string, sitePropertyValue: string, rowLimit: number): Promise<Array<any>> {
     try {
-      let viewFields: string[] = listQueryOptions.fields.map(field => { return field.originalField; });
+      let viewFields = this.GetViewFieldsWithId(listQueryOptions);
       viewFields.push("Id");
       let items: any = undefined;
       if (listQueryOptions.camlQuery) {

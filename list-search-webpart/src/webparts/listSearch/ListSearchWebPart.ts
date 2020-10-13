@@ -31,6 +31,7 @@ import { IDynamicDataPropertyDefinition } from '@microsoft/sp-dynamic-data';
 import { IDynamicDataCallables } from '@microsoft/sp-dynamic-data';
 import { IDynamicItem } from './model/IDynamicItem';
 import { PropertyPaneWebPartInformation } from '@pnp/spfx-property-controls/lib/PropertyPaneWebPartInformation';
+import { SharePointFieldTypes, SharePointType } from './model/ISharePointFieldTypes';
 
 
 
@@ -324,7 +325,7 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
               this.properties.displayFieldsCollectionData = [];
             }
             if (!this.properties.displayFieldsCollectionData.some(field => field.IsListTitle)) {
-              this.properties.displayFieldsCollectionData.push({ ColumnTitle: "ListName", IsListTitle: true, IsSiteTitle: false, Searcheable: true });
+              this.properties.displayFieldsCollectionData.push({ ColumnTitle: "ListName", IsListTitle: true, IsSiteTitle: false, Searcheable: true, SPFieldType: SharePointType.Text });
             }
           }
           break;
@@ -340,7 +341,7 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
               this.properties.displayFieldsCollectionData = [];
             }
             if (!this.properties.displayFieldsCollectionData.some(field => field.IsSiteTitle)) {
-              this.properties.displayFieldsCollectionData.push({ ColumnTitle: "Site", IsListTitle: false, IsSiteTitle: true, Searcheable: true });
+              this.properties.displayFieldsCollectionData.push({ ColumnTitle: "Site", IsListTitle: false, IsSiteTitle: true, Searcheable: true, SPFieldType: SharePointType.Text });
             }
           }
           break;
@@ -815,6 +816,19 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
                       title: strings.CollectionDataFieldsSearchable,
                       type: CustomCollectionFieldType.boolean,
                       defaultValue: true
+                    },
+                    {
+                      id: "SPFieldType",
+                      title: strings.CollectionDataFieldsType,
+                      type: CustomCollectionFieldType.dropdown,
+                      options: this.properties.displayFieldsCollectionData && SharePointFieldTypes.GetSharePointTypesAsArray().map(element => {
+                        return {
+                          key: element,
+                          text: element
+                        };
+
+                      }),
+                      required: true
                     }
                   ],
                 })
@@ -968,7 +982,7 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
 
   private updateFieldType(row: any, fieldId: string, option: any, updateFunction: any) {
     updateFunction(fieldId, option.key);
-    row.FieldType = option.FieldType;
+    row.SPFieldType = SharePointFieldTypes.GetSPFieldTypeByString(option.FieldType);
   }
 
   private handleSourceSiteChange(row: IListData, fieldId: string, option: IDropdownOption, updateFunction: any, errorFunction: any) {

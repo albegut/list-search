@@ -1,13 +1,15 @@
-export interface IBaseFieldData{
+import { SharePointType } from "./ISharePointFieldTypes";
+
+export interface IBaseFieldData {
   SiteCollectionSource: string;
   ListSourceField: string;
   SourceField: string;
   TargetField: string;
-  FieldType: string;
+  SPFieldType: SharePointType;
 }
 
 
-export interface IListFieldData extends IBaseFieldData{
+export interface IListFieldData extends IBaseFieldData {
   Order: number;
   sortIdx: number;
 }
@@ -27,9 +29,10 @@ export interface IDisplayFieldData {
   ColumnTitle: string;
   ColumnWidth?: number;
   Searcheable: boolean;
+  SPFieldType: SharePointType;
 }
 
-export interface ICompleteModalData extends IBaseFieldData{
+export interface ICompleteModalData extends IBaseFieldData {
 
 }
 
@@ -44,53 +47,3 @@ export interface ICustomOption {
   Option: string;
   CustomData: string;
 }
-
-export type  SharePointFieldTypes = {
-  Text:'Text',
-  Note:'Note',
-  Choice:'Choice',
-  Integer:'Integer',
-  Number:'Number',
-  Money:'Money',
-  DateTime:'DateTime',
-  Lookup:'Lookup',
-  LookupMulti:'LookupMulti',
-  Boolean:'Boolean',
-  User:'Note',
-  UserMulti:'Note',
-  Url:'Note',
-  Calculated:'Note',
-  Image:'Note',
-  Taxonomy:'Note',
-  Computed:'Note',
-  Attachments:'Note',
-  Counter:'Note',
-  ContentTypeId:'Note',
-  Guid:'Note',
-}
-
-/*
-export enum SharePointFieldTypes {
-  Text = 0,
-  Note,
-  Choice,
-  Integer,
-  Number,
-  Money,
-  DateTime,
-  Lookup,
-  LookupMulti,
-  Boolean,
-  User,
-  UserMulti,
-  Url,
-  Calculated,
-  Image,
-  Taxonomy,
-  Computed,
-  Attachments,
-  Counter,
-  ContentTypeId,
-  Guid,
-}
-*/
