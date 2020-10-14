@@ -14,6 +14,11 @@ import { IListField } from '../model/IListField';
 import { SharePointType } from '../model/ISharePointFieldTypes';
 
 
+export interface QueryHelperEntity {
+  viewFields: string[];
+  expandFields: string[];
+}
+
 export default class ListService implements IListService {
   private web: IWeb;
   private baseUrl: string;
@@ -31,56 +36,103 @@ export default class ListService implements IListService {
     this.baseUrl = siteUrl;
   }
 
-  private GetViewFieldsWithId(listQueryOptions: IListSearchListQuery): string[] {
-    let viewFields: string[] = listQueryOptions.fields.map(field => {
+  private GetViewFieldsWithId(listQueryOptions: IListSearchListQuery): QueryHelperEntity {
+    let result: QueryHelperEntity = { expandFields: [], viewFields: [] };
+    listQueryOptions.fields.map(field => {
       switch (field.fieldType) {
+        case SharePointType.User:
+          result.viewFields.push(`${field.originalField}/EMail`);
+          result.viewFields.push(`${field.originalField}/Name`);
+          result.expandFields.push(`${field.originalField}`);
+          break;
+        case SharePointType.UserMulti:
+          result.viewFields.push(`${field.originalField}/Title`);
+          result.viewFields.push(`${field.originalField}/Name`);
+          result.expandFields.push(`${field.originalField}`);
+          break;
         case SharePointType.Lookup:
         case SharePointType.LookupMulti:
-        case SharePointType.User:
-        case SharePointType.UserMulti:
           {
-            return `${field.originalField}Id`;
+            result.viewFields.push(`${field.originalField}Id`);
+            break;
           }
         default:
           {
-            return field.originalField;
+            result.viewFields.push(field.originalField);
+            break;
           }
       }
     });
 
-    return viewFields;
+    return result;
+  }
+
+  private GetItemValue(item: any, field: any): any {
+
+    switch (field.fieldType) {
+      case SharePointType.User:
+      case SharePointType.UserMulti:
+        item[field.newField] = item[field.originalField];
+        delete item[field.originalField];
+        break;
+      case SharePointType.Lookup:
+      case SharePointType.LookupMulti:
+        {
+          item[field.newField] = item[`${field.originalField}Id`];
+          delete item[`${field.originalField}Id`];
+          break;
+        }
+      default:
+        {
+          item[field.newField] = item[field.originalField];
+          delete item[field.originalField];
+          break;
+        }
+    }
+
+
+    return item;
   }
 
   public async getListItems(listQueryOptions: IListSearchListQuery, listPropertyName: string, sitePropertyName: string, sitePropertyValue: string, rowLimit: number): Promise<Array<any>> {
     try {
-      let viewFields = this.GetViewFieldsWithId(listQueryOptions);
-      viewFields.push("Id");
+      let queryConfig: QueryHelperEntity = this.GetViewFieldsWithId(listQueryOptions);
+      queryConfig.viewFields.push("Id");
       let items: any = undefined;
       if (listQueryOptions.camlQuery) {
-        let query = this.getCamlQueryWithViewFieldsAndRowLimit(listQueryOptions.camlQuery, viewFields, rowLimit);
+        let query = this.getCamlQueryWithViewFieldsAndRowLimit(listQueryOptions.camlQuery, queryConfig, rowLimit);
         items = await this.getListItemsByCamlQuery(listQueryOptions.list, query);
       }
       else {
         if (listQueryOptions.viewName) {
           let viewInfo: any = await this.web.lists.getByTitle(listQueryOptions.list).views.getByTitle(listQueryOptions.viewName).select("ViewQuery").get();
-          let query = this.getCamlQueryWithViewFieldsAndRowLimit(`<View><Query>${viewInfo.ViewQuery}</Query></View>`, viewFields, rowLimit);
+          let query = this.getCamlQueryWithViewFieldsAndRowLimit(`<View><Query>${viewInfo.ViewQuery}</Query></View>`, queryConfig, rowLimit);
           items = await this.getListItemsByCamlQuery(listQueryOptions.list, query);
         }
         else {
 
           if (rowLimit) {
-            items = await this.web.lists.getByTitle(listQueryOptions.list).items.top(rowLimit).select(viewFields.join(',')).get();
+            if (queryConfig.expandFields && queryConfig.expandFields.length > 0) {
+              items = await this.web.lists.getByTitle(listQueryOptions.list).items.select(queryConfig.viewFields.join(',')).expand(queryConfig.expandFields.join(',')).get();
+            }
+            else {
+              items = await this.web.lists.getByTitle(listQueryOptions.list).items.top(rowLimit).select(queryConfig.viewFields.join(',')).get();
+            }
           }
           else {
-            items = await this.web.lists.getByTitle(listQueryOptions.list).items.select(viewFields.join(',')).get();
+            if (queryConfig.expandFields && queryConfig.expandFields.length > 0) {
+              items = await this.web.lists.getByTitle(listQueryOptions.list).items.select(queryConfig.viewFields.join(',')).expand(queryConfig.expandFields.join(',')).get();
+            }
+            else {
+              items = await this.web.lists.getByTitle(listQueryOptions.list).items.select(queryConfig.viewFields.join(',')).get();
+            }
           }
         }
 
       }
       let mappedItems = items.map(i => {
         listQueryOptions.fields.map(field => {
-          i[field.newField] = i[field.originalField];
-          delete i[field.originalField];
+          i = this.GetItemValue(i, field);
         });
         i["SiteUrl"] = this.baseUrl;
         i["ListName"] = listQueryOptions.list;
@@ -133,14 +185,14 @@ export default class ListService implements IListService {
     }
   }
 
-  private getCamlQueryWithViewFieldsAndRowLimit(camlQuery: string, viewFields: Array<string>, rowLimit: number): string {
+  private getCamlQueryWithViewFieldsAndRowLimit(camlQuery: string, queryConfig: QueryHelperEntity, rowLimit: number): string {
     try {
       let XmlParser = new XMLParser();
       let xml: ICamlQueryXml = XmlParser.parseFromString(camlQuery);
 
       let rowLimitXml: ICamlQueryXml = { name: "RowLimit", value: rowLimit ? rowLimit.toString() : "0", attributes: undefined, children: [] };
 
-      let viewFieldsChildren: ICamlQueryXml[] = viewFields.map(viewField => {
+      let viewFieldsChildren: ICamlQueryXml[] = queryConfig.viewFields.map(viewField => {
         return { name: "FieldRef", attributes: { Name: viewField }, value: "", children: [] };
       });
       let viewFieldsXml: ICamlQueryXml = { name: "ViewFields", value: "", children: viewFieldsChildren, attributes: undefined };

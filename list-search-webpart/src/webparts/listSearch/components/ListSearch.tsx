@@ -35,6 +35,11 @@ import { IBaseFieldData } from '../model/IListConfigProps';
 import { Toggle } from 'office-ui-fabric-react/lib/Toggle';
 import { SharePointType } from '../model/ISharePointFieldTypes';
 import { Dropdown, IDropdownOption } from 'office-ui-fabric-react/lib/Dropdown';
+import { Persona, PersonaSize } from 'office-ui-fabric-react/lib/Persona';
+import { Facepile, OverflowButtonType, IFacepilePersona } from 'office-ui-fabric-react/lib/Facepile';
+import StringUtils from '../services/Utils';
+
+
 
 
 
@@ -455,16 +460,40 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
   }
 
   private _renderItemColumn(item: any, index: number, column: IColumn) {
-    const fieldContent = item[column.fieldName] as string;
+    const fieldContent = item[column.fieldName];
 
     switch (column.data) {
       case SharePointType.User:
+        return <Persona
+          {...{
+            imageUrl: fieldContent.Email ? `/_layouts/15/userphoto.aspx?UserName=${fieldContent.Email}` : undefined,
+            imageInitials: StringUtils.GetUserInitials(fieldContent.Name),
+            text: fieldContent.Name
+          }}
+          size={PersonaSize.size32}
+          hidePersonaDetails={false}
+        />
       case SharePointType.UserMulti:
+        let personas: IFacepilePersona[] = fieldContent.map(user => {
+          let email = StringUtils.GetUserEmail(user.Name);
+          return { imageUrl: email ? `/_layouts/15/userphoto.aspx?UserName=${email}` : undefined, personaName: user.Title, imageInitials: StringUtils.GetUserInitials(user.Title), };
+        });
+        const overflowButtonProps = {
+          ariaLabel: 'More users',
+        };
+        return <Facepile
+          personaSize={PersonaSize.size32}
+          personas={personas}
+          maxDisplayablePersonas={3}
+          overflowButtonType={OverflowButtonType.descriptive}
+          overflowButtonProps={overflowButtonProps}
+        />
       case SharePointType.Lookup:
       case SharePointType.LookupMulti:
       case SharePointType.Taxonomy:
       case SharePointType.TaxonomyMulti:
       case SharePointType.Url:
+      case SharePointType.Image:
         return <span>"Custom"</span>;
       default:
         return <span>{fieldContent}</span>;
