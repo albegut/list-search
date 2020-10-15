@@ -52,10 +52,19 @@ export default class ListService implements IListService {
           break;
         case SharePointType.Lookup:
         case SharePointType.LookupMulti:
-          {
-            result.viewFields.push(`${field.originalField}Id`);
-            break;
+          result.viewFields.push(`${field.originalField}/Title`);
+          result.expandFields.push(`${field.originalField}`);
+          break;
+        case SharePointType.Taxonomy:
+          if (!result.viewFields.find(e => e === "TaxCatchAll/Term")) {
+            result.viewFields.push("TaxCatchAll/Term");
           }
+          if (!result.viewFields.find(e => e === "TaxCatchAll/ID")) {
+            result.viewFields.push("TaxCatchAll/ID");
+          }
+          result.viewFields.push(field.originalField);
+          result.expandFields.push("TaxCatchAll");
+          break;
         default:
           {
             result.viewFields.push(field.originalField);
@@ -68,24 +77,22 @@ export default class ListService implements IListService {
   }
 
   private GetItemValue(item: any, field: any): any {
-
     switch (field.fieldType) {
-      case SharePointType.User:
-      case SharePointType.UserMulti:
-        item[field.newField] = item[field.originalField];
-        delete item[field.originalField];
-        break;
-      case SharePointType.Lookup:
-      case SharePointType.LookupMulti:
+      case SharePointType.Taxonomy:
         {
-          item[field.newField] = item[`${field.originalField}Id`];
-          delete item[`${field.originalField}Id`];
+          let taxonomyValues = item["TaxCatchAll"];
+          let taxonomyTerm = taxonomyValues.find(t => t.ID === item[field.originalField].WssId);
+          if (taxonomyTerm) {
+            item[field.newField] = taxonomyTerm;
+          }
           break;
         }
       default:
         {
           item[field.newField] = item[field.originalField];
-          delete item[field.originalField];
+          if (field.newField !== field.originalField) {
+            delete item[field.originalField];
+          }
           break;
         }
     }

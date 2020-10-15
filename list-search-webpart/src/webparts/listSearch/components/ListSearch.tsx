@@ -38,8 +38,8 @@ import { Dropdown, IDropdownOption } from 'office-ui-fabric-react/lib/Dropdown';
 import { Persona, PersonaSize } from 'office-ui-fabric-react/lib/Persona';
 import { Facepile, OverflowButtonType, IFacepilePersona } from 'office-ui-fabric-react/lib/Facepile';
 import StringUtils from '../services/Utils';
-
-
+import { Image, IImageProps, ImageFit } from 'office-ui-fabric-react/lib/Image';
+import { Link } from 'office-ui-fabric-react';
 
 
 
@@ -65,6 +65,8 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
       selectedItem: null,
       completeModalItemData: null
     };
+    this.GetJSXElementByType = this.GetJSXElementByType.bind(this);
+    this._renderItemColumn = this._renderItemColumn.bind(this);
 
   }
 
@@ -371,40 +373,45 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
   }
 
   public GetModal = () => {
-    const cancelIcon: IIconProps = { iconName: 'Cancel' };
-    const theme = getTheme();
-    const iconButtonStyles = {
-      root: {
-        color: theme.palette.neutralPrimary,
-        marginLeft: 'auto',
-        marginTop: '4px',
-        marginRight: '2px',
-        float: 'right'
-      },
-      rootHovered: {
-        color: theme.palette.neutralDark,
-      },
-    };
-    const modal: JSX.Element =
-      <Modal
-        isOpen={!this.state.isModalHidden}
-        onDismiss={this._closeModalGlosarioModal}
-        isBlocking={false}
-        containerClassName={styles.containerModal}
-      >
-        <div className={styles.headerModal}>
-          {this.state.selectedItem &&
-            <IconButton
-              styles={iconButtonStyles}
-              iconProps={cancelIcon}
-              onClick={this._closeModalGlosarioModal}
-            />}
-        </div>
-        <div className={styles.bodyModal}>
-          {this.getBodyModal()}
-        </div>
-      </Modal>
-    return modal;
+    try {
+      const cancelIcon: IIconProps = { iconName: 'Cancel' };
+      const theme = getTheme();
+      const iconButtonStyles = {
+        root: {
+          color: theme.palette.neutralPrimary,
+          marginLeft: 'auto',
+          marginTop: '4px',
+          marginRight: '2px',
+          float: 'right'
+        },
+        rootHovered: {
+          color: theme.palette.neutralDark,
+        },
+      };
+      const modal: JSX.Element =
+        <Modal
+          isOpen={!this.state.isModalHidden}
+          onDismiss={this._closeModalGlosarioModal}
+          isBlocking={false}
+          containerClassName={styles.containerModal}
+        >
+          <div className={styles.headerModal}>
+            {this.state.selectedItem &&
+              <IconButton
+                styles={iconButtonStyles}
+                iconProps={cancelIcon}
+                onClick={this._closeModalGlosarioModal}
+              />}
+          </div>
+          <div className={styles.bodyModal}>
+            {this.getBodyModal()}
+          </div>
+        </Modal>
+      return modal;
+    }
+    catch (error) {
+      this.SetError(error, "GetModal");
+    }
   }
 
   private getBodyModal() {
@@ -459,48 +466,131 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
       </>
   }
 
-  private _renderItemColumn(item: any, index: number, column: IColumn) {
+  private _renderItemColumn(item: any, index: number, column: IColumn): JSX.Element {
     const fieldContent = item[column.fieldName];
-
-    switch (column.data) {
+    let result = this.GetJSXElementByType(fieldContent, column.data);
+    /*switch (column.data) {
       case SharePointType.User:
-        return <Persona
-          {...{
-            imageUrl: fieldContent.Email ? `/_layouts/15/userphoto.aspx?UserName=${fieldContent.Email}` : undefined,
-            imageInitials: StringUtils.GetUserInitials(fieldContent.Name),
-            text: fieldContent.Name
-          }}
-          size={PersonaSize.size32}
-          hidePersonaDetails={false}
-        />
+        {
+          result = <Persona
+            {...{
+              imageUrl: fieldContent.Email ? `/_layouts/15/userphoto.aspx?UserName=${fieldContent.Email}` : undefined,
+              imageInitials: StringUtils.GetUserInitials(fieldContent.Name),
+              text: fieldContent.Name
+            }}
+            size={PersonaSize.size32}
+            hidePersonaDetails={false}
+          />
+          break;
+        }
       case SharePointType.UserMulti:
-        let personas: IFacepilePersona[] = fieldContent.map(user => {
-          let email = StringUtils.GetUserEmail(user.Name);
-          return { imageUrl: email ? `/_layouts/15/userphoto.aspx?UserName=${email}` : undefined, personaName: user.Title, imageInitials: StringUtils.GetUserInitials(user.Title), };
-        });
-        const overflowButtonProps = {
-          ariaLabel: 'More users',
-        };
-        return <Facepile
-          personaSize={PersonaSize.size32}
-          personas={personas}
-          maxDisplayablePersonas={3}
-          overflowButtonType={OverflowButtonType.descriptive}
-          overflowButtonProps={overflowButtonProps}
-        />
-      case SharePointType.Lookup:
-      case SharePointType.LookupMulti:
+        {
+          let personas: IFacepilePersona[] = fieldContent.map(user => {
+            let email = StringUtils.GetUserEmail(user.Name);
+            return { imageUrl: email ? `/_layouts/15/userphoto.aspx?UserName=${email}` : undefined, personaName: user.Title, imageInitials: StringUtils.GetUserInitials(user.Title), };
+          });
+          const overflowButtonProps = {
+            ariaLabel: 'More users',
+          };
+          result = <Facepile
+            personaSize={PersonaSize.size32}
+            personas={personas}
+            maxDisplayablePersonas={3}
+            overflowButtonType={OverflowButtonType.descriptive}
+            overflowButtonProps={overflowButtonProps}
+          />
+          break;
+        }
       case SharePointType.Taxonomy:
+        result = <span>{fieldContent.Term}</span>;
+        break;
       case SharePointType.TaxonomyMulti:
+        {
+          if (fieldContent) {
+            let labels = fieldContent.map(tax => { return tax.Label });
+            result = <span>{labels.map((val, index) => {
+              if (index + 1 == labels.lenght) {
+                return <span>{val}</span>;
+              }
+              else {
+                return <span>{val}<br></br></span>;
+              }
+            })}
+            </span>
+          }
+          else {
+            result = <span> </span>
+          }
+          break;
+        }
+      case SharePointType.Lookup:
+        if (fieldContent && fieldContent.Title) {
+          result = <Link href="#">{fieldContent.Title}</Link>;
+        }
+        else {
+          result = <span> </span>
+        }
+        break;
+      case SharePointType.LookupMulti:
+        if (fieldContent) {
+          let values = fieldContent.map(value => { return value.Title });
+          result = <span>{values.map((val, index) => {
+            if (index + 1 == values.lenght) {
+              return <Link href="#">{val}</Link>;
+            }
+            else {
+              return <span><Link href="#">{val}</Link><br></br></span>;
+            }
+          })}
+          </span>
+        }
+        else {
+          result = <span> </span>
+        }
+        break;
       case SharePointType.Url:
+        result = <Link href={fieldContent.Url}>{fieldContent.Description}</Link>;
+        break;
       case SharePointType.Image:
-        return <span>"Custom"</span>;
+        {
+          if (fieldContent && fieldContent.Url) {
+            const imageProps: IImageProps = {
+              src: fieldContent.Url,
+              imageFit: ImageFit.contain,
+              width: 100,
+              height: 100,
+            };
+
+            result = <Image
+              {...imageProps}
+              src={fieldContent.Url}
+              alt={fieldContent.Description}
+            />
+          }
+          else {
+            result = <span></span>
+          }
+          break;
+        }
+      case SharePointType.Boolean:
+        {
+          result = <span>{fieldContent.toString()}</span>;
+          break;
+        }
+      case SharePointType.NoteFullHtml:
+        {
+          result = <span dangerouslySetInnerHTML={{ __html: fieldContent }}></span>;
+          break;
+        }
       default:
-        return <span>{fieldContent}</span>;
-    }
+        result = <span>{fieldContent}</span>;
+        break;
+    }*/
+
+    return result;
   }
   private GetRenderByFieldType(item: any, config: IBaseFieldData): JSX.Element {
-    let result;
+    let result = this.GetJSXElementByType(item[config.TargetField], config.SPFieldType);
 
     switch (config.SPFieldType) {
       case SharePointType.Text:
@@ -518,7 +608,6 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
         ];
         <Dropdown
           label="Disabled example with defaultSelectedKey"
-          defaultSelectedKey="broccoli"
           options={options}
           disabled={true}
         />
@@ -527,6 +616,129 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
         result = <>
           {item[config.TargetField]}
         </>;
+        break;
+    }
+
+    return result;
+  }
+
+  private GetJSXElementByType(value: any, fieldType: SharePointType): JSX.Element {
+    let result;
+    switch (fieldType) {
+      case SharePointType.User:
+        {
+          result = <Persona
+            {...{
+              imageUrl: value.Email ? `/_layouts/15/userphoto.aspx?UserName=${value.Email}` : undefined,
+              imageInitials: StringUtils.GetUserInitials(value.Name),
+              text: value.Name
+            }}
+            size={PersonaSize.size32}
+            hidePersonaDetails={false}
+          />
+          break;
+        }
+      case SharePointType.UserMulti:
+        {
+          let personas: IFacepilePersona[] = value.map(user => {
+            let email = StringUtils.GetUserEmail(user.Name);
+            return { imageUrl: email ? `/_layouts/15/userphoto.aspx?UserName=${email}` : undefined, personaName: user.Title, imageInitials: StringUtils.GetUserInitials(user.Title), };
+          });
+          const overflowButtonProps = {
+            ariaLabel: 'More users',
+          };
+          result = <Facepile
+            personaSize={PersonaSize.size32}
+            personas={personas}
+            maxDisplayablePersonas={3}
+            overflowButtonType={OverflowButtonType.descriptive}
+            overflowButtonProps={overflowButtonProps}
+          />
+          break;
+        }
+      case SharePointType.Taxonomy:
+        result = <span>{value.Term}</span>;
+        break;
+      case SharePointType.TaxonomyMulti:
+        {
+          if (value) {
+            let labels = value.map(tax => { return tax.Label });
+            result = <span>{labels.map((val, index) => {
+              if (index + 1 == labels.lenght) {
+                return <span>{val}</span>;
+              }
+              else {
+                return <span>{val}<br></br></span>;
+              }
+            })}
+            </span>
+          }
+          else {
+            result = <span> </span>
+          }
+          break;
+        }
+      case SharePointType.Lookup:
+        if (value && value.Title) {
+          result = <Link href="#">{value.Title}</Link>;
+        }
+        else {
+          result = <span> </span>
+        }
+        break;
+      case SharePointType.LookupMulti:
+        if (value) {
+          let values = value.map(value => { return value.Title });
+          result = <span>{values.map((val, index) => {
+            if (index + 1 == values.lenght) {
+              return <Link href="#">{val}</Link>;
+            }
+            else {
+              return <span><Link href="#">{val}</Link><br></br></span>;
+            }
+          })}
+          </span>
+        }
+        else {
+          result = <span> </span>
+        }
+        break;
+      case SharePointType.Url:
+        result = <Link href={value.Url}>{value.Description}</Link>;
+        break;
+      case SharePointType.Image:
+        {
+          if (value && value.Url) {
+            const imageProps: IImageProps = {
+              src: value.Url,
+              imageFit: ImageFit.contain,
+              width: 100,
+              height: 100,
+            };
+
+            result = <Image
+              {...imageProps}
+              src={value.Url}
+              alt={value.Description}
+            />
+          }
+          else {
+            result = <span></span>
+          }
+          break;
+        }
+      case SharePointType.Boolean:
+        {
+          result = <span>{value.toString()}</span>;
+          break;
+        }
+      case SharePointType.NoteFullHtml:
+        {
+          result = <span dangerouslySetInnerHTML={{ __html: value }}></span>;
+          break;
+        }
+      default:
+        result = <span>{value}</span>;
         break;
     }
 

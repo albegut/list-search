@@ -1,7 +1,7 @@
 export class SharePointFieldTypes {
 
   public static GetSPFieldTypeByString(fieldTypeAsString: string): SharePointType {
-    let result: SharePointType = SharePointType.Text;
+    let result: SharePointType;
     switch (fieldTypeAsString) {
       case 'Text': {
         result = SharePointType.Text;
@@ -9,6 +9,10 @@ export class SharePointFieldTypes {
       }
       case 'Note': {
         result = SharePointType.Note;
+        break;
+      }
+      case 'NoteFullHtml': {
+        result = SharePointType.NoteFullHtml;
         break;
       }
       case 'Choice': {
@@ -55,7 +59,7 @@ export class SharePointFieldTypes {
         result = SharePointType.Url;
         break;
       }
-      case 'Computed': {
+      case 'Calculated': {
         result = SharePointType.Computed;
         break;
       }
@@ -63,8 +67,12 @@ export class SharePointFieldTypes {
         result = SharePointType.Image;
         break;
       }
-      case 'Taxonomy': {
+      case 'TaxonomyFieldType': {
         result = SharePointType.Taxonomy;
+        break;
+      }
+      case 'TaxonomyFieldTypeMulti': {
+        result = SharePointType.TaxonomyMulti;
         break;
       }
       case 'Attachments': {
@@ -83,6 +91,9 @@ export class SharePointFieldTypes {
         result = SharePointType.Guid;
         break;
       }
+      default:{
+        result = SharePointType.Text;
+      }
     }
 
     return result;
@@ -97,6 +108,7 @@ export class SharePointFieldTypes {
 export enum SharePointType {
   Text = "Text",
   Note = "Note",
+  NoteFullHtml = "NoteFullHtml",
   Choice = "Choice",
   Integer = "Integer",
   Number = "Number",
