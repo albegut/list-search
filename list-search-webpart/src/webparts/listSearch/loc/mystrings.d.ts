@@ -24,6 +24,7 @@ declare interface IListSearchWebPartStrings {
   CollectionDataFieldsList: string;
   CollectionDataFieldsListField: string;
   CollectionDataFieldsTargetField: string;
+  CollectionDataFieldsRenderType: string;
   CollectionDataFieldsOrder: string;
   CollectionDataFieldsSearchable: string;
   CollectionDataFieldsType: string;

@@ -2,7 +2,7 @@ import * as React from 'react';
 import { Dropdown } from 'office-ui-fabric-react/lib/components/Dropdown';
 import { ICustomCollectionField } from '@pnp/spfx-property-controls/lib/PropertyFieldCollectionData';
 import { TextField } from 'office-ui-fabric-react/lib/components/TextField';
-import { IListFieldData, IListData, ICustomOption } from '../model/IListConfigProps';
+import { IMappingFieldData, IListData, ICustomOption } from '../model/IListConfigProps';
 import { IPropertyPaneDropdownOption } from '@microsoft/sp-property-pane';
 import { IListField } from '../model/IListField';
 import styles from '../ListSearchWebPart.module.scss';
@@ -20,7 +20,7 @@ export default class CustomCollectionDataField {
       className="PropertyFieldCollectionData__panel__dropdown-field" />);
   }
 
-  public static getListPickerBySiteOptions(possibleOptions: Array<IListData>, field: ICustomCollectionField, row: IListFieldData, updateFunction: any): JSX.Element {
+  public static getListPickerBySiteOptions(possibleOptions: Array<IListData>, field: ICustomCollectionField, row: IMappingFieldData, updateFunction: any): JSX.Element {
     let currentOptions = [];
     possibleOptions.filter(option => {
       if (row.SiteCollectionSource && option.SiteCollectionSource == row.SiteCollectionSource) {

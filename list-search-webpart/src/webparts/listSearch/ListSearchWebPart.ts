@@ -11,7 +11,7 @@ import { PropertyFieldCollectionData, CustomCollectionFieldType } from '@pnp/spf
 import { IListSearchProps } from './components/IListSearchProps';
 import ListSearch from './components/ListSearch';
 import * as strings from 'ListSearchWebPartStrings';
-import { IListFieldData, IListData, IDisplayFieldData, ICompleteModalData, IRedirectData, ICustomOption } from './model/IListConfigProps';
+import { IMappingFieldData, IListData, IDetailListFieldData, ICompleteModalData, IRedirectData, ICustomOption } from './model/IListConfigProps';
 import { IPropertyFieldSite, PropertyFieldSitePicker, } from '@pnp/spfx-property-controls/lib/PropertyFieldSitePicker';
 import { PropertyFieldNumber } from '@pnp/spfx-property-controls/lib/PropertyFieldNumber';
 import { Placeholder } from "@pnp/spfx-controls-react/lib/Placeholder";
@@ -37,8 +37,8 @@ import { SharePointFieldTypes, SharePointType } from './model/ISharePointFieldTy
 
 export interface IListSearchWebPartProps {
   ListName: string;
-  displayFieldsCollectionData: Array<IDisplayFieldData>;
-  fieldCollectionData: Array<IListFieldData>;
+  detailListFieldsCollectionData: Array<IDetailListFieldData>;
+  mappingFieldsCollectionData: Array<IMappingFieldData>;
   listsCollectionData: Array<IListData>;
   ShowListName: boolean;
   ListNameTitle: string;
@@ -192,8 +192,8 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
   }
 
   private OrderfieldsCollectionData() {
-    if (this.properties.listsCollectionData && this.properties.fieldCollectionData) {
-      this.properties.fieldCollectionData = this.properties.fieldCollectionData.map(element => {
+    if (this.properties.listsCollectionData && this.properties.mappingFieldsCollectionData) {
+      this.properties.mappingFieldsCollectionData = this.properties.mappingFieldsCollectionData.map(element => {
         element.Order = this.properties.listsCollectionData.find(source => source.ListSourceField === element.ListSourceField && source.SiteCollectionSource === element.SiteCollectionSource).sortIdx;
         return element;
       });
@@ -222,22 +222,22 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
       if (this.properties.clickEnabled) {
         this.setSelectedOnClickOption(this.properties.onClickSelectedOption);
       }
-      let sercheableFields = this.properties.displayFieldsCollectionData.filter(fieldData => { if (fieldData.Searcheable) return fieldData.ColumnTitle; });
+      let sercheableFields = this.properties.detailListFieldsCollectionData.filter(fieldData => { if (fieldData.Searcheable) return fieldData.ColumnTitle; });
 
       if (this.properties.ShowListName) {
-        this.properties.ListNameTitle = this.properties.displayFieldsCollectionData.filter(field => field.IsListTitle)[0].ColumnTitle;
+        this.properties.ListNameTitle = this.properties.detailListFieldsCollectionData.filter(field => field.IsListTitle)[0].ColumnTitle;
       }
 
       if (this.properties.ShowSiteTitle) {
-        this.properties.SiteNameTitle = this.properties.displayFieldsCollectionData.filter(field => field.IsSiteTitle)[0].ColumnTitle;
+        this.properties.SiteNameTitle = this.properties.detailListFieldsCollectionData.filter(field => field.IsSiteTitle)[0].ColumnTitle;
       }
 
       const element: React.ReactElement<IListSearchProps> = React.createElement(
         ListSearch,
         {
           Sites: this.properties.sites,
-          displayFieldsCollectionData: this.properties.displayFieldsCollectionData,
-          fieldsCollectionData: this.properties.fieldCollectionData.sort((prev, next) => prev.Order - next.Order),
+          detailListFieldsCollectionData: this.properties.detailListFieldsCollectionData,
+          mappingFieldsCollectionData: this.properties.mappingFieldsCollectionData.sort((prev, next) => prev.Order - next.Order),
           listsCollectionData: this.properties.listsCollectionData.sort(),
           ShowListName: this.properties.ShowListName,
           ListNameTitle: this.properties.ListNameTitle,
@@ -281,8 +281,8 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
   }
 
   private isConfig(): boolean {
-    return this.properties.sites && this.properties.sites.length > 0 && this.properties.fieldCollectionData && this.properties.fieldCollectionData.length > 0 &&
-      this.properties.listsCollectionData && this.properties.listsCollectionData.length > 0 && this.properties.displayFieldsCollectionData && this.properties.displayFieldsCollectionData.length > 0;
+    return this.properties.sites && this.properties.sites.length > 0 && this.properties.mappingFieldsCollectionData && this.properties.mappingFieldsCollectionData.length > 0 &&
+      this.properties.listsCollectionData && this.properties.listsCollectionData.length > 0 && this.properties.detailListFieldsCollectionData && this.properties.detailListFieldsCollectionData.length > 0;
   }
 
   protected get dataVersion(): Version {
@@ -306,7 +306,7 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
             return newValue.filter(option => option.SiteCollectionSource === modalField.SiteCollectionSource && option.ListSourceField === modalField.ListSourceField).length > 0;
           });
 
-          this.properties.fieldCollectionData = this.properties.fieldCollectionData && this.properties.fieldCollectionData.filter(modalField => {
+          this.properties.mappingFieldsCollectionData = this.properties.mappingFieldsCollectionData && this.properties.mappingFieldsCollectionData.filter(modalField => {
             return newValue.filter(option => option.SiteCollectionSource === modalField.SiteCollectionSource && option.ListSourceField === modalField.ListSourceField).length > 0;
           });
 
@@ -318,14 +318,14 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
         {
           if (!newValue) {
             this.properties.ListNameTitle = '';
-            this.properties.displayFieldsCollectionData = this.properties.displayFieldsCollectionData.filter(field => !field.IsListTitle);
+            this.properties.detailListFieldsCollectionData = this.properties.detailListFieldsCollectionData.filter(field => !field.IsListTitle);
           }
           else {
-            if (this.properties.displayFieldsCollectionData == undefined) {
-              this.properties.displayFieldsCollectionData = [];
+            if (this.properties.detailListFieldsCollectionData == undefined) {
+              this.properties.detailListFieldsCollectionData = [];
             }
-            if (!this.properties.displayFieldsCollectionData.some(field => field.IsListTitle)) {
-              this.properties.displayFieldsCollectionData.push({ ColumnTitle: "ListName", IsListTitle: true, IsSiteTitle: false, Searcheable: true, SPFieldType: SharePointType.Text });
+            if (!this.properties.detailListFieldsCollectionData.some(field => field.IsListTitle)) {
+              this.properties.detailListFieldsCollectionData.push({ ColumnTitle: "ListName", IsListTitle: true, IsSiteTitle: false, Searcheable: true });
             }
           }
           break;
@@ -334,14 +334,14 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
         {
           if (!newValue) {
             this.properties.SiteNameTitle = '';
-            this.properties.displayFieldsCollectionData = this.properties.displayFieldsCollectionData.filter(field => !field.IsSiteTitle);
+            this.properties.detailListFieldsCollectionData = this.properties.detailListFieldsCollectionData.filter(field => !field.IsSiteTitle);
           }
           else {
-            if (this.properties.displayFieldsCollectionData == undefined) {
-              this.properties.displayFieldsCollectionData = [];
+            if (this.properties.detailListFieldsCollectionData == undefined) {
+              this.properties.detailListFieldsCollectionData = [];
             }
-            if (!this.properties.displayFieldsCollectionData.some(field => field.IsSiteTitle)) {
-              this.properties.displayFieldsCollectionData.push({ ColumnTitle: "Site", IsListTitle: false, IsSiteTitle: true, Searcheable: true, SPFieldType: SharePointType.Text });
+            if (!this.properties.detailListFieldsCollectionData.some(field => field.IsSiteTitle)) {
+              this.properties.detailListFieldsCollectionData.push({ ColumnTitle: "Site", IsListTitle: false, IsSiteTitle: true, Searcheable: true });
             }
           }
           break;
@@ -371,7 +371,7 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
 
               difference.map(site => {
                 this.properties.listsCollectionData = this.properties.listsCollectionData.filter(item => item.SiteCollectionSource != site.url);
-                this.properties.fieldCollectionData = this.properties.fieldCollectionData.filter(item => item.SiteCollectionSource != site.url);
+                this.properties.mappingFieldsCollectionData = this.properties.mappingFieldsCollectionData.filter(item => item.SiteCollectionSource != site.url);
               });
             }
           }
@@ -779,13 +779,13 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
                   checked: !!this.properties.sites && this.properties.sites.length > 0 && this.properties.ShowSiteTitle
                 }),
                 SiteNamePropertyToShowPropertyPane,
-                PropertyFieldCollectionData("displayFieldsCollectionData", {
+                PropertyFieldCollectionData("detailListFieldsCollectionData", {
                   enableSorting: true,
-                  key: "displayFieldsCollectionData",
+                  key: "detailListFieldsCollectionData",
                   label: strings.CollectionDataFieldTitle,
                   panelHeader: strings.CollectionDataFieldHeader,
                   manageBtnLabel: strings.CollectionDataFieldsButton,
-                  value: this.properties.displayFieldsCollectionData,
+                  value: this.properties.detailListFieldsCollectionData,
                   fields: [
                     {
 
@@ -816,19 +816,6 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
                       title: strings.CollectionDataFieldsSearchable,
                       type: CustomCollectionFieldType.boolean,
                       defaultValue: true
-                    },
-                    {
-                      id: "SPFieldType",
-                      title: strings.CollectionDataFieldsType,
-                      type: CustomCollectionFieldType.dropdown,
-                      options: this.properties.displayFieldsCollectionData && SharePointFieldTypes.GetSharePointTypesAsArray().map(element => {
-                        return {
-                          key: element,
-                          text: element
-                        };
-
-                      }),
-                      required: true
                     }
                   ],
                 })
@@ -838,12 +825,12 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
               groupName: strings.CollectionDataFieldsProperties,
               isCollapsed: true,
               groupFields: [
-                PropertyFieldCollectionData("fieldCollectionData", {
-                  key: "fieldCollectionData",
+                PropertyFieldCollectionData("mappingFieldsCollectionData", {
+                  key: "mappingFieldsCollectionData",
                   label: strings.CollectionDataFieldsToRetreive,
                   panelHeader: strings.CollectionDataFieldsHeader,
                   manageBtnLabel: strings.CollectionDataFieldsSelectBtn,
-                  value: this.properties.fieldCollectionData,
+                  value: this.properties.mappingFieldsCollectionData,
                   fields: [
                     {
                       id: "SiteCollectionSource",
@@ -880,7 +867,7 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
                       id: "TargetField",
                       title: strings.CollectionDataFieldsTargetField,
                       type: CustomCollectionFieldType.dropdown,
-                      options: this.properties.displayFieldsCollectionData && this.properties.displayFieldsCollectionData.filter(field => !field.IsListTitle && !field.IsSiteTitle).map(field => {
+                      options: this.properties.detailListFieldsCollectionData && this.properties.detailListFieldsCollectionData.filter(field => !field.IsListTitle && !field.IsSiteTitle).map(field => {
                         return {
                           key: field.ColumnTitle,
                           text: field.ColumnTitle
@@ -888,9 +875,22 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
 
                       }),
                       required: true
-                    }
+                    },
+                    {
+                      id: "SPFieldType",
+                      title: strings.CollectionDataFieldsRenderType,
+                      type: CustomCollectionFieldType.custom,
+                      required: true,
+                      onCustomRender: (field, value, onUpdate, item, itemId, onError) => {
+                        if (item.SiteCollectionSource && item.ListSourceField && item.SourceField) {
+                          return (
+                            CustomCollectionDataField.getPickerByStringOptions(this.GetRenderOptionsByType(item.SPFieldType), field, item, onUpdate, undefined)
+                          );
+                        }
+                      }
+                    },
                   ],
-                  disabled: !this.properties.sites || this.properties.sites.length == 0 || !this.properties.displayFieldsCollectionData || this.properties.displayFieldsCollectionData.length == 0,
+                  disabled: !this.properties.sites || this.properties.sites.length == 0 || !this.properties.detailListFieldsCollectionData || this.properties.detailListFieldsCollectionData.length == 0,
 
                 })]
             }
@@ -957,6 +957,28 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
       ]
     };
 
+  }
+
+  private GetRenderOptionsByType(SPFieldType: string): string[] {
+    let result = [SPFieldType];
+
+    switch (SPFieldType) {
+      case SharePointType.Text:
+      case SharePointType.Note:
+      case SharePointType.NoteFullHtml:
+        {
+          result = [SharePointType.Text, SharePointType.Note, SharePointType.NoteFullHtml];
+          break;
+        }
+      case SharePointType.Url:
+      case SharePointType.Image:
+        {
+          result = [SharePointType.Url, SharePointType.Image];
+          break;
+        }
+    }
+
+    return result;
   }
 
   private saveSiteCollectionLists(site: string, Lists: string[]) {

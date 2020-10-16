@@ -27,8 +27,8 @@ export class SharePointFieldTypes {
         result = SharePointType.Number;
         break;
       }
-      case 'Money': {
-        result = SharePointType.Money;
+      case 'Currency': {
+        result = SharePointType.Currency;
         break;
       }
       case 'DateTime': {
@@ -55,7 +55,7 @@ export class SharePointFieldTypes {
         result = SharePointType.UserMulti;
         break;
       }
-      case 'Url': {
+      case 'URL': {
         result = SharePointType.Url;
         break;
       }
@@ -112,7 +112,7 @@ export enum SharePointType {
   Choice = "Choice",
   Integer = "Integer",
   Number = "Number",
-  Money = "Money",
+  Currency = "Currency",
   DateTime = "DateTime",
   Lookup = "Lookup",
   LookupMulti = "LookupMulti",

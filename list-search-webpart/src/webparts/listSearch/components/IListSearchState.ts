@@ -1,6 +1,7 @@
 export interface IListSearchState {
   isLoading: boolean;
   errorMsg: string;
+  errorHeader: string;
   items: Array<any>;
   filterItems: Array<any>;
   generalFilter: string;

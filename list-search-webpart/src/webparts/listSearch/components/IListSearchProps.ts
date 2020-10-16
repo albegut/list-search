@@ -1,13 +1,13 @@
 import { WebPartContext } from "@microsoft/sp-webpart-base";
-import { IListFieldData, IListData, IDisplayFieldData, ICompleteModalData, IRedirectData } from "../model/IListConfigProps";
+import { IMappingFieldData, IListData, IDetailListFieldData, ICompleteModalData, IRedirectData } from "../model/IListConfigProps";
 import { IPropertyFieldSite, } from '@pnp/spfx-property-controls/lib/PropertyFieldSitePicker';
 import { IReadonlyTheme } from '@microsoft/sp-component-base';
 
 
 export interface IListSearchProps {
   Context: WebPartContext;
-  displayFieldsCollectionData: Array<IDisplayFieldData>;
-  fieldsCollectionData: Array<IListFieldData>;
+  detailListFieldsCollectionData: Array<IDetailListFieldData>;
+  mappingFieldsCollectionData: Array<IMappingFieldData>;
   listsCollectionData: Array<IListData>;
   ShowListName: boolean;
   ListNameTitle: string;
@@ -16,7 +16,7 @@ export interface IListSearchProps {
   SiteNamePropertyToShow: string;
   GeneralFilter: boolean;
   GeneralFilterPlaceHolderText: string;
-  GeneralSearcheableFields: Array<IDisplayFieldData>;
+  GeneralSearcheableFields: Array<IDetailListFieldData>;
   IndividualColumnFilter: boolean;
   IndividualFilterPosition: string[];
   ShowClearAllFilters: boolean;

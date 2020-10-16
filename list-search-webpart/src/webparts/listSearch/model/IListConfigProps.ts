@@ -9,7 +9,7 @@ export interface IBaseFieldData {
 }
 
 
-export interface IListFieldData extends IBaseFieldData {
+export interface IMappingFieldData extends IBaseFieldData {
   Order: number;
   sortIdx: number;
 }
@@ -23,13 +23,12 @@ export interface IListData {
   sortIdx: number;
 }
 
-export interface IDisplayFieldData {
+export interface IDetailListFieldData {
   IsSiteTitle: boolean;
   IsListTitle: boolean;
   ColumnTitle: string;
   ColumnWidth?: number;
   Searcheable: boolean;
-  SPFieldType: SharePointType;
 }
 
 export interface ICompleteModalData extends IBaseFieldData {
