@@ -2,7 +2,7 @@ import * as React from 'react';
 import styles from '../ListSearchWebPart.module.scss';
 import * as strings from 'ListSearchWebPartStrings';
 import ListService from '../services/ListService';
-import { IListSearchState, IColumnFilter } from './IListSearchState';
+import IGroupedItems, { IListSearchState, IColumnFilter } from './IListSearchState';
 import { IListSearchProps } from './IListSearchProps';
 import { Spinner, SpinnerSize } from 'office-ui-fabric-react/lib/Spinner';
 import {
@@ -48,7 +48,7 @@ const LOG_SOURCE = "IListdSearchWebPart";
 const filterIcon: IIconProps = { iconName: 'Filter' };
 
 export default class IListdSearchWebPart extends React.Component<IListSearchProps, IListSearchState> {
-  private columns: IColumn[] = [];
+  private groups: any[];
   private keymapQuerys: {} = {};
   constructor(props: IListSearchProps, state: IListSearchState) {
     super(props);
@@ -64,7 +64,9 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
       isModalHidden: true,
       isModalLoading: false,
       selectedItem: null,
-      completeModalItemData: null
+      completeModalItemData: null,
+      columns: [],
+      groupedItems: []
     };
     this.GetJSXElementByType = this.GetJSXElementByType.bind(this);
     this._renderItemColumn = this._renderItemColumn.bind(this);
@@ -73,8 +75,7 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
 
   public componentDidUpdate(prevProps: Readonly<IListSearchProps>, prevState: Readonly<IListSearchState>, snapshot?: any): void {
     if (prevProps != this.props) {
-      this.columns = [];
-      this.setState({ items: null, filterItems: null, isLoading: true });
+      this.setState({ items: null, filterItems: null, isLoading: true, columns: [] });
       this.getData();
     }
   }
@@ -112,16 +113,21 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
           session.setSotareElementByKey("sharepointData", result, this.props.minutesToCache);
         }
         else {
-          this.AddColumnsToDisplay();
           result = cacheData.elements;
         }
       }
-
       if (this.props.ItemLimit) {
         result = result.slice(0, this.props.ItemLimit);
       }
 
-      this.setState({ items: result, filterItems: result, isLoading: false });
+      let columns = this.AddColumnsToDisplay();
+      let groupedItems = [];
+      if (this.props.groupByField) {
+        groupedItems =  this._groupBy(result, this.props.groupByField);
+        this._getGroups(groupedItems);
+      }
+
+      this.setState({ items: result, filterItems: result, isLoading: false, columns, groupedItems });
     } catch (error) {
       this.SetError(error, "getData");
     }
@@ -130,9 +136,6 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
   private async readListsItems(): Promise<Array<any>> {
     this.generateKeymap();
     let itemPromise: Array<Promise<Array<any>>> = [];
-
-    //TODO check if it is necessary to generate the columns
-    this.AddColumnsToDisplay();
 
     Object.keys(this.keymapQuerys).map(site => {
       let listService: ListService = new ListService(site);
@@ -151,10 +154,22 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
     return result;
   }
 
-  private AddColumnsToDisplay(): void {
+  private AddColumnsToDisplay(): IColumn[] {
+    let columns: IColumn[] = []
     this.props.detailListFieldsCollectionData.sort().map(column => {
       let mappingType = this.props.mappingFieldsCollectionData.find(e => e.TargetField === column.ColumnTitle);
-      this.columns.push({ key: column.ColumnTitle, name: column.ColumnTitle, fieldName: column.ColumnTitle, minWidth: 100, maxWidth: column.ColumnWidth || undefined, isResizable: true, data: mappingType ? mappingType.SPFieldType : SharePointType.Text });
+      columns.push({ key: column.ColumnTitle, name: column.ColumnTitle, fieldName: column.ColumnTitle, minWidth: 100, maxWidth: column.ColumnWidth || undefined, isResizable: true, data: mappingType ? mappingType.SPFieldType : SharePointType.Text, onColumnClick: this._onColumnClick });
+    });
+
+    return columns;
+  }
+
+  private _getGroups(groupedItems: IGroupedItems[]) {
+    let groupedElements: number = 0;
+    this.groups = this.props.groupByField && groupedItems && groupedItems.map(group => {
+      let result = { key: group.GroupName, name: group.GroupName, startIndex: groupedElements, count: group.Items.length, level: 0 };
+      groupedElements += group.Items.length;
+      return result;
     });
   }
 
@@ -316,14 +331,18 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
   private _getItems(): Array<any> {
     let result = [];
     if (this.state.filterItems) {
-      if (this.props.ShowPagination) {
-        let start = this.props.ItemsInPage * (this.state.activePage - 1);
-        result = this.state.filterItems.slice(start, start + this.props.ItemsInPage);
+      if (this.props.groupByField) {
+        this.state.groupedItems.map(group => { result = [...result, ...group.Items] });
       }
       else {
-        result = this.state.filterItems;
+        if (this.props.ShowPagination) {
+          let start = this.props.ItemsInPage * (this.state.activePage - 1);
+          result = this.state.filterItems.slice(start, start + this.props.ItemsInPage);
+        }
+        else {
+          result = this.state.filterItems;
+        }
       }
-
     }
 
     return result;
@@ -379,8 +398,6 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
       this.SetError(error, "GetOnClickAction")
     }
   }
-
-
 
   public GetModal = () => {
     const cancelIcon: IIconProps = { iconName: 'Cancel' };
@@ -476,6 +493,7 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
     let result = this.GetJSXElementByType(fieldContent, column.data);
     return result;
   }
+
   private GetModalBodyRenderByFieldType(item: any, config: IBaseFieldData): JSX.Element {
     let result = this.GetJSXElementByType(item[config.TargetField], config.SPFieldType);
 
@@ -515,7 +533,7 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
             />
           }
           else {
-            result = <span> </span>
+            result = <span></span>
           }
           break;
         }
@@ -538,7 +556,7 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
             />
           }
           else {
-            result = <span> </span>
+            result = <span></span>
           }
           break;
         }
@@ -547,7 +565,7 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
           result = <span>{value.Term}</span>;
         }
         else {
-          result = <span> </span>
+          result = <span></span>
         }
         break;
       case SharePointType.TaxonomyMulti:
@@ -565,7 +583,7 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
             </span>
           }
           else {
-            result = <span> </span>
+            result = <span></span>
           }
           break;
         }
@@ -574,7 +592,7 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
           result = <Link href="#">{value.Title}</Link>;
         }
         else {
-          result = <span> </span>
+          result = <span></span>
         }
         break;
       case SharePointType.LookupMulti:
@@ -591,7 +609,7 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
           </span>
         }
         else {
-          result = <span> </span>
+          result = <span></span>
         }
         break;
       case SharePointType.Url:
@@ -599,7 +617,7 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
           result = <Link href={value.Url}>{value.Description}</Link>;
         }
         else {
-          result = <span> </span>
+          result = <span></span>
         }
         break;
       case SharePointType.Image:
@@ -629,7 +647,7 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
             result = <span>{value.toString()}</span>;
           }
           else {
-            result = <span> </span>
+            result = <span></span>
           }
           break;
         }
@@ -639,7 +657,7 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
             result = <span dangerouslySetInnerHTML={{ __html: value }}></span>;
           }
           else {
-            result = <span> </span>
+            result = <span></span>
           }
           break;
         }
@@ -649,6 +667,66 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
     }
 
     return result;
+  }
+
+  private _groupBy(array, key): IGroupedItems[] {
+    let resArray: IGroupedItems[] = [];
+    try {
+      if (key) {
+        let groupByObj = array.reduce((result, currentValue) => {
+          if (currentValue[key] != undefined) {
+            if (currentValue[key].Label !== undefined) {
+              (result[currentValue[key].Label] = result[currentValue[key].Label] || []).push(
+                currentValue
+              );
+            } else {
+              (result[currentValue[key]] = result[currentValue[key]] || []).push(
+                currentValue
+              );
+            }
+            return result;
+          }
+        }, {});
+
+        resArray = Object.keys(groupByObj).sort().map(group => {
+          return { GroupName: group, Items: groupByObj[group] };
+        });
+      }
+    } catch (error) {
+      this.SetError(error, '_groupBy')
+    }
+
+    return resArray;
+  }
+
+
+  private _copyAndSort<T>(items: T[], columnKey: string, isSortedDescending?: boolean): T[] {
+    const key = columnKey as keyof T;
+    return items.slice(0).sort((a: T, b: T) => ((isSortedDescending ? a[key] < b[key] : a[key] > b[key]) ? 1 : -1));
+  }
+
+  private _onColumnClick = (ev: React.MouseEvent<HTMLElement>, column: IColumn): void => {
+    const newColumns: IColumn[] = this.state.columns.slice();
+    const currColumn: IColumn = newColumns.filter(currCol => column.key === currCol.key)[0];
+    newColumns.forEach((newCol: IColumn) => {
+      if (newCol === currColumn) {
+        currColumn.isSortedDescending = !currColumn.isSortedDescending;
+        currColumn.isSorted = true;
+      } else {
+        newCol.isSorted = false;
+        newCol.isSortedDescending = true;
+      }
+    });
+    if (this.props.groupByField) {
+
+      const newGroupedElements = this.state.groupedItems.map(group => { return { GroupName: group.GroupName, Items: this._copyAndSort(group.Items, currColumn.fieldName!, currColumn.isSortedDescending) } });
+      this.setState({ columns: newColumns, groupedItems: newGroupedElements });
+    }
+    else {
+      const newItems = this._copyAndSort(this.state.items, currColumn.fieldName!, currColumn.isSortedDescending);
+      this.setState({ columns: newColumns, items: newItems });
+    }
+
   }
 
 
@@ -681,7 +759,14 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
                   <div className={styles.rowData}>
                     <div className={styles.colData}>
                       {this.props.ShowItemCount && <div className={styles.template_resultCount}>{this.props.ItemCountText.replace("{itemCount}", `${this.state.filterItems.length}`)}</div>}
-                      <DetailsList items={this._getItems()} columns={this.columns}
+                      <DetailsList
+                        items={this._getItems()}
+                        columns={this.state.columns}
+                        groups={this.groups}
+                        groupProps={{
+                          showEmptyGroups: true,
+                          isAllGroupsCollapsed: true,
+                        }}
                         onRenderDetailsFooter={this._checkIndividualFilter("footer") ? (detailsFooterProps) => this._onRenderDetails(detailsFooterProps) : undefined}
                         onRenderDetailsHeader={this._checkIndividualFilter("header") ? (detailsHeaderProps) => this._onRenderDetails(detailsHeaderProps) : undefined}
                         className={styles.searchListData}

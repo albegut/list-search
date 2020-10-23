@@ -71,6 +71,8 @@ export interface IListSearchWebPartProps {
   redirectData: Array<IRedirectData>;
   onRedirectIdQuery: string;
   onClickNumberOfClicksOption: string;
+  groupByField: string;
+  groupedByField: boolean;
 }
 
 export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearchWebPartProps> implements IDynamicDataCallables {
@@ -271,6 +273,7 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
           onRedirectIdQuery: this.properties.onRedirectIdQuery,
           onSelectedItem: this.onSelectedItem.bind(this),
           oneClickOption: this.properties.onClickNumberOfClicksOption == "oneClick",
+          groupByField: this.properties.groupByField
         }
       );
       renderElement = element;
@@ -405,6 +408,22 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
           }
           break;
         }
+      case "groupByField":
+        {
+          if (newValue) {
+            this.properties.ShowPagination = false;
+            this.context.propertyPane.refresh();
+          }
+          break;
+        }
+      case "groupedByField":
+        {
+          if (newValue) {
+            this.properties.groupByField = "";
+            this.context.propertyPane.refresh();
+          }
+          break;
+        }
     }
   }
 
@@ -512,7 +531,7 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
       placeholder: strings.GeneralPropertiesItemCountPlaceholder
     }) : emptyProperty;
 
-    let ItemsInPagePropertyPane = this.properties.ShowPagination ? PropertyFieldNumber("ItemsInPage", {
+    let ItemsInPagePropertyPane = this.properties.ShowPagination && !this.properties.groupedByField ? PropertyFieldNumber("ItemsInPage", {
       key: "ItemsInPage",
       label: strings.GeneralPropertiesItemPerPage,
       value: this.properties.ItemsInPage || null,
@@ -525,6 +544,14 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
         }
         return '';
       }
+    }) : emptyProperty;
+
+    let groupByFieldPropertyPane = this.properties.groupedByField ? PropertyPaneDropdown('groupByField', {
+      label: strings.GroupFieldOptionsToSelect,
+      selectedKey: this.properties.groupByField,
+      options: this.properties.detailListFieldsCollectionData.map(field => {
+        return { key: field.ColumnTitle, text: field.ColumnTitle };
+      }),
     }) : emptyProperty;
 
     let cacheTimePropertyPane = this.properties.UseLocalStorage ? PropertyFieldNumber("minutesToCache", {
@@ -744,8 +771,16 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
                 }),
                 PropertyPaneToggle('ShowPagination', {
                   label: strings.GeneralPropertiesShowPagination,
+                  checked: this.properties.ShowPagination && !this.properties.groupedByField,
+                  disabled: this.properties.groupedByField
                 }),
-                ItemsInPagePropertyPane,
+                ItemsInPagePropertyPane
+              ]
+            },
+            {
+              groupName: strings.OnClickPropertiesGroup,
+              isCollapsed: true,
+              groupFields: [
                 PropertyPaneToggle('clickEnabled', {
                   label: strings.OnClickEvent,
                 }),
@@ -818,7 +853,13 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
                       defaultValue: true
                     }
                   ],
-                })
+                }),
+                PropertyPaneToggle('groupedByField', {
+                  label: strings.GeneralPropertiesGroupByField,
+                  checked: this.properties.detailListFieldsCollectionData && this.properties.detailListFieldsCollectionData.length > 0 && this.properties.groupedByField,
+                  disabled: !(this.properties.detailListFieldsCollectionData && this.properties.detailListFieldsCollectionData.length)
+                }),
+                groupByFieldPropertyPane,
               ]
             },
             {

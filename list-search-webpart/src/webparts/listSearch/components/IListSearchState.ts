@@ -1,3 +1,4 @@
+import { IColumn } from 'office-ui-fabric-react';
 export interface IListSearchState {
   isLoading: boolean;
   errorMsg: string;
@@ -11,7 +12,15 @@ export interface IListSearchState {
   isModalLoading: boolean;
   selectedItem: any;
   completeModalItemData: any;
+  groupedItems: IGroupedItems[];
+  columns: IColumn[];
 }
+
+export default interface IGroupedItems {
+  GroupName: string;
+  Items: any[];
+}
+
 
 export interface IColumnFilter {
   columnName: string;

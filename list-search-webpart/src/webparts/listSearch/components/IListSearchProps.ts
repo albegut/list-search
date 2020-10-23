@@ -41,4 +41,5 @@ export interface IListSearchProps {
   onRedirectIdQuery: string;
   onSelectedItem: any;
   oneClickOption: boolean;
+  groupByField: string;
 }

@@ -87,6 +87,19 @@ export default class ListService implements IListService {
           }
           break;
         }
+      case SharePointType.Boolean:
+        {
+          if (item[field.originalField] != undefined) {
+            item[field.newField] = item[field.originalField] ? "true" : "false";
+          }
+          else {
+            item[field.newField] = item[field.originalField];
+          }
+          if (field.newField !== field.originalField) {
+            delete item[field.originalField];
+          }
+          break;
+        }
       default:
         {
           item[field.newField] = item[field.originalField];

@@ -16,6 +16,7 @@ define([], function () {
     GeneralPropertiesRowLimitLabel: "Item limit to show",
     GeneralPropertiesRowLimitDescription: "If 0 all items are render",
     GeneralPropertiesShowPagination: "Show pagination",
+    GeneralPropertiesGroupByField: "Group elements",
     FieldPropertiesGroup: "Fields",
     CollectionDataFieldsProperties: "Lists Field Properties",
     CollectionDataFieldsToRetreive: "Fields to retreive",
@@ -85,5 +86,7 @@ define([], function () {
     TwoClickTriggerText: "Two clicks",
     InformationPropertiesGroupName: "Webpart Information",
     AboutPropertiesGroupName: "About",
+    OnClickPropertiesGroup: "On click Properties",
+    GroupFieldOptionsToSelect: "Field to order by"
   }
 });

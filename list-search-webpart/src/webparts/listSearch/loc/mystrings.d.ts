@@ -15,6 +15,7 @@ declare interface IListSearchWebPartStrings {
   GeneralPropertiesRowLimitLabel: string;
   GeneralPropertiesRowLimitDescription: string;
   GeneralPropertiesShowPagination: string;
+  GeneralPropertiesGroupByField: string;
   FieldPropertiesGroup: string;
   CollectionDataFieldsProperties: string;
   CollectionDataFieldsToRetreive: string;
@@ -84,6 +85,8 @@ declare interface IListSearchWebPartStrings {
   TwoClickTriggerText: string;
   InformationPropertiesGroupName: string;
   AboutPropertiesGroupName: string;
+  OnClickPropertiesGroup: string;
+  GroupFieldOptionsToSelect: string;
 }
 
 declare module 'ListSearchWebPartStrings' {
