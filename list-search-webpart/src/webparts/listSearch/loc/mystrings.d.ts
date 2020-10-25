@@ -28,9 +28,16 @@ declare interface IListSearchWebPartStrings {
   CollectionDataFieldsRenderType: string;
   CollectionDataFieldsOrder: string;
   CollectionDataFieldsSearchable: string;
+  detailListFieldsColumnTitle: string;
+  detailListFieldsColumnMinWidth: string;
+  detailListFieldsColumnMaxWidth: string;
+  detailListFieldsIsSiteColumn: string;
+  detailListFieldsIsListColumn: string;
+  detailListFieldsIsFileIconColumn: string;
   CollectionDataFieldsType: string;
   DisplayFieldsPropertiesGroup: string;
   GeneralFieldsPropertiesShowListName: string;
+  GeneralFieldsPropertiesShowFileIcon: string;
   GeneralFieldsPropertiesShowSiteInformation: string;
   FilterPropertiesGroup: string;
   FilterPropertiesGroupName: string;

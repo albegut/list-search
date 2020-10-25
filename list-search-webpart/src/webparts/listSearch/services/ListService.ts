@@ -37,7 +37,7 @@ export default class ListService implements IListService {
   }
 
   private GetViewFieldsWithId(listQueryOptions: IListSearchListQuery): QueryHelperEntity {
-    let result: QueryHelperEntity = { expandFields: [], viewFields: [] };
+    let result: QueryHelperEntity = { expandFields: [], viewFields: ['ServerUrl','FileLeafRef'] };
     listQueryOptions.fields.map(field => {
       switch (field.fieldType) {
         case SharePointType.User:
@@ -154,6 +154,7 @@ export default class ListService implements IListService {
         listQueryOptions.fields.map(field => {
           i = this.GetItemValue(i, field);
         });
+        i.FileExtension = this.GetFileExtension(i.FileLeafRef)
         i["SiteUrl"] = this.baseUrl;
         i["ListName"] = listQueryOptions.list;
         if (listPropertyName) {
@@ -238,5 +239,10 @@ export default class ListService implements IListService {
       return `getCamlQueryWithViewFieldsAndRowLimit -> ${error.message}`;
     }
 
+  }
+
+  private GetFileExtension(filename: string): string {
+    var re = /(?:\.([^.]+))?$/;
+    return re.exec(filename)[1] ? re.exec(filename)[1].toLowerCase() : undefined;
   }
 }

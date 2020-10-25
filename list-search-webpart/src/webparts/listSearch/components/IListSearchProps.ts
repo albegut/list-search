@@ -10,6 +10,7 @@ export interface IListSearchProps {
   mappingFieldsCollectionData: Array<IMappingFieldData>;
   listsCollectionData: Array<IListData>;
   ShowListName: boolean;
+  ShowFileIcon: boolean;
   ListNameTitle: string;
   ShowSite: boolean;
   SiteNameTitle: string;

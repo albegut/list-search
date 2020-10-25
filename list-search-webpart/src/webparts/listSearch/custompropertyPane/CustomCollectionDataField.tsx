@@ -6,6 +6,8 @@ import { IMappingFieldData, IListData, ICustomOption } from '../model/IListConfi
 import { IPropertyPaneDropdownOption } from '@microsoft/sp-property-pane';
 import { IListField } from '../model/IListField';
 import styles from '../ListSearchWebPart.module.scss';
+import { Checkbox } from 'office-ui-fabric-react/lib/components/Checkbox';
+
 
 
 
@@ -58,7 +60,7 @@ export default class CustomCollectionDataField {
     return this.getCustomCollectionDropDown(options, field, row, updateFunction, null, customOnchangeFunction);
   }
 
-  public static getDisableTextField(field: ICustomCollectionField, item: any, updateFunction: any): JSX.Element {
+  public static getDisabledTextField(field: ICustomCollectionField, item: any, updateFunction: any): JSX.Element {
     return <TextField placeholder={field.placeholder || field.title}
       className={styles.collectionDataField}
       value={item[field.id] ? item[field.id] : ""}
@@ -67,5 +69,12 @@ export default class CustomCollectionDataField {
       onChange={(value) => updateFunction(field.id, value)}
       deferredValidationTime={field.deferredValidationTime || field.deferredValidationTime >= 0 ? field.deferredValidationTime : 200}
       inputClassName="PropertyFieldCollectionData__panel__string-field" />;
+  }
+
+  public static getDisabledCheckBoxField(field: ICustomCollectionField, item: any, updateFunction: any): JSX.Element {
+    return <Checkbox checked={item[field.id] ? item[field.id] : false}
+      onChange={(ev, value) => updateFunction(field.id, value)}
+      disabled={true}
+      className="PropertyFieldCollectionData__panel__boolean-field" />;
   }
 }

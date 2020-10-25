@@ -100,7 +100,7 @@ export class SharePointFieldTypes {
   }
 
   public static GetSharePointTypesAsArray(): Array<string> {
-    return Object.keys(SharePointType);
+    return Object.keys(SharePointType).filter(element => element != 'FileIcon');
   }
 
 }
@@ -128,4 +128,5 @@ export enum SharePointType {
   Counter = "Counter",
   ContentTypeId = "ContentTypeId",
   Guid = "Guid",
+  FileIcon = "FileIcon",
 }

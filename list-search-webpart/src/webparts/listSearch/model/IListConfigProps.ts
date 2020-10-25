@@ -26,8 +26,10 @@ export interface IListData {
 export interface IDetailListFieldData {
   IsSiteTitle: boolean;
   IsListTitle: boolean;
+  IsFileIcon: boolean;
   ColumnTitle: string;
-  ColumnWidth?: number;
+  MinColumnWidth?: number;
+  MaxColumnWidth?: number;
   Searcheable: boolean;
 }
 

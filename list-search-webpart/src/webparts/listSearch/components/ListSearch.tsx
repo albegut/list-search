@@ -40,6 +40,8 @@ import { Facepile, OverflowButtonType, IFacepilePersona } from 'office-ui-fabric
 import StringUtils from '../services/Utils';
 import { Image, IImageProps, ImageFit } from 'office-ui-fabric-react/lib/Image';
 import { Link } from 'office-ui-fabric-react';
+import { FileTypeIcon, ApplicationType, IconType, ImageSize } from "@pnp/spfx-controls-react/lib/FileTypeIcon";
+import { CalendarType } from '@pnp/sp/fields';
 
 
 
@@ -123,7 +125,7 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
       let columns = this.AddColumnsToDisplay();
       let groupedItems = [];
       if (this.props.groupByField) {
-        groupedItems =  this._groupBy(result, this.props.groupByField);
+        groupedItems = this._groupBy(result, this.props.groupByField);
         this._getGroups(groupedItems);
       }
 
@@ -158,7 +160,7 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
     let columns: IColumn[] = []
     this.props.detailListFieldsCollectionData.sort().map(column => {
       let mappingType = this.props.mappingFieldsCollectionData.find(e => e.TargetField === column.ColumnTitle);
-      columns.push({ key: column.ColumnTitle, name: column.ColumnTitle, fieldName: column.ColumnTitle, minWidth: 100, maxWidth: column.ColumnWidth || undefined, isResizable: true, data: mappingType ? mappingType.SPFieldType : SharePointType.Text, onColumnClick: this._onColumnClick });
+      columns.push({ key: column.ColumnTitle, name: column.ColumnTitle, fieldName: column.ColumnTitle, minWidth: column.MinColumnWidth || 50, maxWidth: column.MaxColumnWidth || undefined, isResizable: true, data: mappingType ? mappingType.SPFieldType : (column.IsFileIcon ? SharePointType.FileIcon : SharePointType.Text), onColumnClick: this._onColumnClick, isIconOnly: column.IsFileIcon });
     });
 
     return columns;
@@ -462,7 +464,7 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
                 {val.TargetField}
               </div>
               <div>
-                {this.state.isModalLoading ? <Shimmer /> : this.state.completeModalItemData[val.SourceField]}
+                {this.state.isModalLoading ? <Shimmer /> : this.GetModalBodyRenderByFieldType(this.state.completeModalItemData, val)}
               </div>
             </>;
           })
@@ -489,13 +491,12 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
   }
 
   private _renderItemColumn(item: any, index: number, column: IColumn): JSX.Element {
-    const fieldContent = item[column.fieldName];
-    let result = this.GetJSXElementByType(fieldContent, column.data);
+    let result = this.GetJSXElementByType(item, column.fieldName, column.data);
     return result;
   }
 
   private GetModalBodyRenderByFieldType(item: any, config: IBaseFieldData): JSX.Element {
-    let result = this.GetJSXElementByType(item[config.TargetField], config.SPFieldType);
+    let result = this.GetJSXElementByType(item, config.TargetField, config.SPFieldType);
 
     switch (config.SPFieldType) {
       case SharePointType.Boolean:
@@ -516,9 +517,82 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
     return result;
   }
 
-  private GetJSXElementByType(value: any, fieldType: SharePointType): JSX.Element {
+
+
+  private GetFileIconByFileType(extesion: string): JSX.Element {
+    let result;
+    let size = ImageSize.small;
+    let type = IconType.image;
+    switch (extesion) {
+      case "doc":
+      case "docx":
+        {
+          result = <FileTypeIcon type={type} size={size} application={ApplicationType.Word} />;
+          break;
+        }
+      case "xlsx":
+      case "xls":
+      case "xlsm":
+        {
+          result = <FileTypeIcon type={type} size={size} application={ApplicationType.Excel} />;
+          break;
+        }
+      case "pdf":
+        {
+          result = <FileTypeIcon type={type} size={size} application={ApplicationType.PDF} />;
+          break;
+        }
+      case "csv":
+        {
+          result = <FileTypeIcon type={type} size={size} application={ApplicationType.CSV} />;
+          break;
+        }
+      case "csv":
+        {
+          result = <FileTypeIcon type={type} size={size} application={ApplicationType.PowerPoint} />;
+          break;
+        }
+      case "email":
+      case "msg":
+      case "oft":
+      case "ost":
+      case "pst":
+        {
+          result = <FileTypeIcon type={type} size={size} application={ApplicationType.Mail} />;
+          break;
+        }
+      case "ppt":
+      case "pptx":
+        {
+          result = <FileTypeIcon type={type} size={size} application={ApplicationType.PowerPoint} />;
+          break;
+        }
+      case "gif":
+      case "jpeg":
+      case "jpg":
+      case "png":
+        {
+          result = <FileTypeIcon type={type} size={size} application={ApplicationType.PowerPoint} />;
+          break;
+        }
+      default:
+        {
+          result = <FileTypeIcon type={type} size={size} application={ApplicationType.ASPX} />;
+          break;
+        }
+    }
+    return result;
+  }
+
+  private GetJSXElementByType(item: any, fieldName: string, fieldType: SharePointType): JSX.Element {
+    const value = item[fieldName];
     let result;
     switch (fieldType) {
+      case SharePointType.FileIcon:
+        {
+          result = this.GetFileIconByFileType(item.FileExtension);
+          break;
+        }
       case SharePointType.User:
         {
           if (value && value.Name) {
