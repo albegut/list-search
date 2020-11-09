@@ -758,8 +758,8 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
                 currentValue
               );
             }
-            return result;
           }
+          return result;
         }, {});
 
         resArray = Object.keys(groupByObj).sort().map(group => {
