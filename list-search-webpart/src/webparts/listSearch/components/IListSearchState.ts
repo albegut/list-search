@@ -1,4 +1,5 @@
 import { IColumn } from 'office-ui-fabric-react';
+import { SharePointType } from '../model/ISharePointFieldTypes';
 export interface IListSearchState {
   isLoading: boolean;
   errorMsg: string;
@@ -25,4 +26,5 @@ export default interface IGroupedItems {
 export interface IColumnFilter {
   columnName: string;
   filterToApply: string;
+  columnType: SharePointType;
 }

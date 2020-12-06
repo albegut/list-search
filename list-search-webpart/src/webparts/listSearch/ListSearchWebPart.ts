@@ -75,6 +75,7 @@ export interface IListSearchWebPartProps {
   groupByField: string;
   groupByFieldType: SharePointType;
   groupedByField: boolean;
+  CacheType: "session" | "local";
 }
 
 export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearchWebPartProps> implements IDynamicDataCallables {
@@ -152,7 +153,7 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
     let sites: string[] = [];
     this.properties.sites.map((item, index, array) => {
       if (array.indexOf(item) == index) {
-        let service: ListService = new ListService(item.url);
+        let service: ListService = new ListService(item.url, false);
         listsDataPromises.push(service.getSiteListsTitle());
         sites.push(item.url);
       }
@@ -179,7 +180,7 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
       let sites: string[] = [];
 
       Object.keys(siteStructure).map(site => {
-        let service: ListService = new ListService(site);
+        let service: ListService = new ListService(site, false);
         siteStructure[site].map(list => {
           listsDataPromises.push(service.getListFields(list));
           lists.push(list);
@@ -264,7 +265,7 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
           ShowPagination: this.properties.ShowPagination,
           ItemsInPage: this.properties.ItemsInPage,
           themeVariant: this._themeVariant,
-          UseLocalStorage: this.properties.UseCache,
+          UseCache: this.properties.UseCache,
           minutesToCache: this.properties.minutesToCache,
           clickEnabled: this.properties.clickEnabled,
           clickIsSimpleModal: this.properties.clickIsSimpleModal,
@@ -278,7 +279,8 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
           oneClickOption: this.properties.onClickNumberOfClicksOption == "oneClick",
           groupByField: this.properties.groupByField,
           AnyCamlQuery: (this.properties.listsCollectionData.findIndex(listConfig => listConfig.Query != undefined || listConfig.ListView != undefined) > 0),
-          groupByFieldType: this.properties.groupByFieldType
+          groupByFieldType: this.properties.groupByFieldType,
+          CacheType: this.properties.CacheType
         }
       );
       renderElement = element;
@@ -383,7 +385,7 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
             if (newValue.length > 0 && oldValue.length < newValue.length) {
               await newValue.map(async site => {
                 if (oldValue.indexOf(site) < 0) {
-                  let service: ListService = new ListService(site.url);
+                  let service: ListService = new ListService(site.url, false);
                   let lists = await service.getSiteListsTitle();
                   this.saveSiteCollectionLists(site.url, lists.map(listInfo => { return listInfo.Title; }))
                 }
@@ -588,6 +590,12 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
       key: "minutesToCache",
       label: strings.MinutesToCacheData,
       value: this.properties.minutesToCache || null,
+    }) : emptyProperty;
+
+    let CacheTypePropertyPane = this.properties.UseCache ? PropertyPaneDropdown('CacheType', {
+      label: strings.LblCacheType,
+      selectedKey: "local",
+      options: [{ key: "local", text: "Local" }, { key: "session", text: "Session" }]
     }) : emptyProperty;
 
     let onclickEventOptionPropertyPane = this.properties.clickEnabled ? PropertyPaneDropdown('onClickSelectedOption', {
@@ -917,7 +925,6 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
                       title: strings.CollectionDataFieldsTargetField,
                       type: CustomCollectionFieldType.custom,
                       required: true,
-                      onGetErrorMessage: (value: any, index: number, crntItem: any) => this.CheckSameSiteColumn(value, index, crntItem),
                       onCustomRender: (field, value, onUpdate, item, itemId, onError) => {
                         if (item.SiteCollectionSource && item.ListSourceField && item.SourceField) {
                           return (
@@ -1034,6 +1041,7 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
                   label: strings.UseLocalStorage,
                   checked: this.properties.UseCache
                 }),
+                CacheTypePropertyPane,
                 cacheTimePropertyPane
               ],
             }
@@ -1114,21 +1122,6 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
     });
   }
 
-  private CheckSameSiteColumn(value: any, index: number, crntItem: IMappingFieldData): string {
-    debugger
-    let result: string = "";
-    let sameField = this.properties.mappingFieldsCollectionData.filter(mappingElement => mappingElement.TargetField === value);
-    if (sameField && sameField.length > 0) {
-      sameField.map(element => {
-        if (element.SiteCollectionSource === crntItem.SiteCollectionSource && element.ListSourceField === crntItem.ListSourceField && element.uniqueId != crntItem.uniqueId) {
-          result = "There are already one field mapping to the same list";
-        }
-      });
-    }
-
-    return result;
-  }
-
   private saveSiteCollectionLists(site: string, Lists: string[]) {
     this.sitesLists[site] = Lists;
   }
@@ -1145,7 +1138,7 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
     if (this.ListsFields[row.SiteCollectionSource] == undefined) {
       this.ListsFields[row.SiteCollectionSource] = {};
     }
-    let service: ListService = new ListService(row.SiteCollectionSource);
+    let service: ListService = new ListService(row.SiteCollectionSource, false);
     let fields: IListField[] = await service.getListFields(option.key.toString());
     this.ListsFields[row.SiteCollectionSource][option.key] = fields;
   }

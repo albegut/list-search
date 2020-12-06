@@ -31,7 +31,7 @@ export interface IListSearchProps {
   ShowPagination: boolean;
   ItemsInPage: number;
   themeVariant: IReadonlyTheme | undefined;
-  UseLocalStorage: boolean;
+  UseCache: boolean;
   minutesToCache: number;
   clickEnabled: boolean;
   clickIsSimpleModal: boolean;
@@ -46,4 +46,5 @@ export interface IListSearchProps {
   groupByField: string;
   groupByFieldType: SharePointType;
   AnyCamlQuery: boolean;
+  CacheType: "session" | "local";
 }

@@ -66,7 +66,7 @@ define([], function () {
     GeneralPropertiesItemPerPage: "Items per page",
     ListSearchLoading: "Loading...",
     StoragePropertiesGroupName: "Cache",
-    UseLocalStorage: "Use local storage",
+    UseLocalStorage: "Use cache",
     MinutesToCacheData: "Time (minutes) to cache the retreive data",
     OnClickEvent: "Use on click event",
     OnClickSimpleModalText: "Modal with current data",
@@ -94,6 +94,7 @@ define([], function () {
     InformationPropertiesGroupName: "Webpart Information",
     AboutPropertiesGroupName: "About",
     OnClickPropertiesGroup: "On click Properties",
-    GroupFieldOptionsToSelect: "Field to order by"
+    GroupFieldOptionsToSelect: "Field to order by",
+    LblCacheType: "Cache type",
   }
 });

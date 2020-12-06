@@ -23,8 +23,11 @@ export default class ListService implements IListService {
   private web: IWeb;
   private baseUrl: string;
 
-  constructor(siteUrl: string) {
+  constructor(siteUrl: string, useCache: boolean, cacheTime?: number, cacheType?: "session" | "local") {
+    console.log({useCache, cacheTime, cacheType})
     sp.setup({
+      defaultCachingStore: useCache ? cacheType : undefined,
+      defaultCachingTimeoutSeconds: useCache ? (cacheTime * 60) : undefined,
       sp: {
         headers: {
           Accept: 'application/json;odata=nometadata'
@@ -135,18 +138,18 @@ export default class ListService implements IListService {
 
           if (rowLimit) {
             if (queryConfig.expandFields && queryConfig.expandFields.length > 0) {
-              items = await this.web.lists.getByTitle(listQueryOptions.list).items.select(queryConfig.viewFields.join(',')).expand(queryConfig.expandFields.join(',')).get();
+              items = await this.web.lists.getByTitle(listQueryOptions.list).items.select(queryConfig.viewFields.join(',')).expand(queryConfig.expandFields.join(',')).usingCaching().get();
             }
             else {
-              items = await this.web.lists.getByTitle(listQueryOptions.list).items.top(rowLimit).select(queryConfig.viewFields.join(',')).get();
+              items = await this.web.lists.getByTitle(listQueryOptions.list).items.top(rowLimit).select(queryConfig.viewFields.join(',')).usingCaching().get();
             }
           }
           else {
             if (queryConfig.expandFields && queryConfig.expandFields.length > 0) {
-              items = await this.web.lists.getByTitle(listQueryOptions.list).items.select(queryConfig.viewFields.join(',')).expand(queryConfig.expandFields.join(',')).get();
+              items = await this.web.lists.getByTitle(listQueryOptions.list).items.select(queryConfig.viewFields.join(',')).expand(queryConfig.expandFields.join(',')).usingCaching().get();
             }
             else {
-              items = await this.web.lists.getByTitle(listQueryOptions.list).items.select(queryConfig.viewFields.join(',')).get();
+              items = await this.web.lists.getByTitle(listQueryOptions.list).items.select(queryConfig.viewFields.join(',')).usingCaching().get();
             }
           }
         }
@@ -175,7 +178,7 @@ export default class ListService implements IListService {
 
   public async getListItemById(listName: string, itemId: number): Promise<any> {
     try {
-      return this.web.lists.getByTitle(listName).items.getById(itemId).get();
+      return this.web.lists.getByTitle(listName).items.getById(itemId).usingCaching().get();
     } catch (error) {
       return Promise.reject(error);
     }
@@ -202,7 +205,7 @@ export default class ListService implements IListService {
       const caml: ICamlQuery = {
         ViewXml: camlQuery,
       };
-      return await this.web.lists.getByTitle(listName).getItemsByCAMLQuery(caml);
+      return await this.web.lists.getByTitle(listName).usingCaching().getItemsByCAMLQuery(caml);
     } catch (error) {
       return Promise.reject(error);
     }

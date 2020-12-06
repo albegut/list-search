@@ -94,6 +94,7 @@ declare interface IListSearchWebPartStrings {
   AboutPropertiesGroupName: string;
   OnClickPropertiesGroup: string;
   GroupFieldOptionsToSelect: string;
+  LblCacheType: string;
 }
 
 declare module 'ListSearchWebPartStrings' {

@@ -11,7 +11,9 @@
     "clean": "gulp clean",
     "test": "gulp test",
     "alldebug": "gulp clean && gulp build && gulp bundle && gulp serve",
-    "serve": "cross-env NODE_OPTIONS=--max_old_space_size=4096 gulp bundle --custom-serve && cross-env NODE_OPTIONS=--max_old_space_size=4096 webpack-dev-server --mode development --config ./webpack.js --env.env=dev"
+    "serve": "cross-env NODE_OPTIONS=--max_old_space_size=4096 gulp bundle --custom-serve && cross-env NODE_OPTIONS=--max_old_space_size=4096 webpack-dev-server --mode development --config ./webpack.js --env.env=dev",
+    "publish-please": "publish-please",
+    "prepublishOnly": "publish-please guard"
   },
   "dependencies": {
     "@microsoft/sp-core-library": "1.11.0",
