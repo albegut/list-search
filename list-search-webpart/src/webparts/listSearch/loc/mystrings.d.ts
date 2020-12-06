@@ -95,6 +95,8 @@ declare interface IListSearchWebPartStrings {
   OnClickPropertiesGroup: string;
   GroupFieldOptionsToSelect: string;
   LblCacheType: string;
+  LblErrorDiferentRender: string;
+  LblErrorSameColumn: string;
 }
 
 declare module 'ListSearchWebPartStrings' {

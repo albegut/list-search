@@ -96,5 +96,7 @@ define([], function () {
     OnClickPropertiesGroup: "On click Properties",
     GroupFieldOptionsToSelect: "Field to order by",
     LblCacheType: "Cache type",
+    LblErrorDiferentRender: "Selected target column has other render mapping type",
+    LblErrorSameColumn: "There are duplicate mappings from this target column and the selected field-list-Site Collection values"
   }
 });

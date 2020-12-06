@@ -24,7 +24,6 @@ export default class ListService implements IListService {
   private baseUrl: string;
 
   constructor(siteUrl: string, useCache: boolean, cacheTime?: number, cacheType?: "session" | "local") {
-    console.log({useCache, cacheTime, cacheType})
     sp.setup({
       defaultCachingStore: useCache ? cacheType : undefined,
       defaultCachingTimeoutSeconds: useCache ? (cacheTime * 60) : undefined,
@@ -133,6 +132,7 @@ export default class ListService implements IListService {
           let viewInfo: any = await this.web.lists.getByTitle(listQueryOptions.list).views.getByTitle(listQueryOptions.viewName).select("ViewQuery").get();
           let query = this.getCamlQueryWithViewFieldsAndRowLimit(`<View><Query>${viewInfo.ViewQuery}</Query></View>`, queryConfig, rowLimit);
           items = await this.getListItemsByCamlQuery(listQueryOptions.list, query);
+
         }
         else {
 
@@ -224,7 +224,6 @@ export default class ListService implements IListService {
       let viewFieldsXml: ICamlQueryXml = { name: "ViewFields", value: "", children: viewFieldsChildren, attributes: undefined };
 
       let queryXml: ICamlQueryXml;
-      let hasPrevRowLimit: boolean = false;
       xml.children.map(child => {
         if (child.name == "Query") {
           queryXml = child;
@@ -239,7 +238,8 @@ export default class ListService implements IListService {
         xml.children = [viewFieldsXml, rowLimitXml, queryXml];
       }
 
-      return XmlParser.toString(xml);
+      let result:string = XmlParser.toString(xml);
+      return result.replace("</RowLimit></RowLimit>","</RowLimit>");
     } catch (error) {
       return `getCamlQueryWithViewFieldsAndRowLimit -> ${error.message}`;
     }

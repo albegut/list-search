@@ -92,6 +92,7 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
     this.setNewListFieds = this.setNewListFieds.bind(this);
     this.handleSourceSiteChange = this.handleSourceSiteChange.bind(this);
     this.updateFieldType = this.updateFieldType.bind(this);
+    this.onMappingColumnChanged = this.onMappingColumnChanged.bind(this);
   }
 
   protected async onInit(): Promise<void> {
@@ -335,7 +336,7 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
               this.properties.detailListFieldsCollectionData = [];
             }
             if (!this.properties.detailListFieldsCollectionData.some(field => field.IsListTitle)) {
-              this.properties.detailListFieldsCollectionData.push({ ColumnTitle: "ListName", IsListTitle: true, IsSiteTitle: false, Searcheable: true, IsFileIcon: false });
+              this.properties.detailListFieldsCollectionData.push(IDetailListFieldData.CreateListColumn(0, 0, true));
             }
           }
           break;
@@ -351,7 +352,7 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
               this.properties.detailListFieldsCollectionData = [];
             }
             if (!this.properties.detailListFieldsCollectionData.some(field => field.IsSiteTitle)) {
-              this.properties.detailListFieldsCollectionData.push({ ColumnTitle: "Site", IsListTitle: false, IsSiteTitle: true, Searcheable: true, IsFileIcon: false });
+              this.properties.detailListFieldsCollectionData.push(IDetailListFieldData.CreateSiteColumn(0, 0, true));
             }
           }
           break;
@@ -366,7 +367,7 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
               this.properties.detailListFieldsCollectionData = [];
             }
             if (!this.properties.detailListFieldsCollectionData.some(field => field.IsFileIcon)) {
-              this.properties.detailListFieldsCollectionData.push({ ColumnTitle: "FileIcon", IsListTitle: false, IsSiteTitle: false, Searcheable: false, IsFileIcon: true, MaxColumnWidth: 30, MinColumnWidth: 30 });
+              this.properties.detailListFieldsCollectionData.push(IDetailListFieldData.CreateFileColumn());
             }
           }
           break;
@@ -928,7 +929,7 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
                       onCustomRender: (field, value, onUpdate, item, itemId, onError) => {
                         if (item.SiteCollectionSource && item.ListSourceField && item.SourceField) {
                           return (
-                            CustomCollectionDataField.getPickerByStringOptions(this.getFreeTargetColumn(item, itemId), field, item, onUpdate, onError)
+                            CustomCollectionDataField.getPickerByStringOptions(this.properties.detailListFieldsCollectionData.filter(column => IDetailListFieldData.IsGeneralColumn(column)).map(option => { return option.ColumnTitle }), field, item, onUpdate, this.onMappingColumnChanged, onError)
                           );
                         }
                       }
@@ -1103,23 +1104,24 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
     return result;
   }
 
-  private getFreeTargetColumn(item: any, itemId: string): string[] {
-    let freeOsSameTypeOptions = this.properties.detailListFieldsCollectionData.filter(fieldOption => {
-      let alreadyMapped = this.properties.mappingFieldsCollectionData && this.properties.mappingFieldsCollectionData.filter(element => element.TargetField === fieldOption.ColumnTitle);
-      if (alreadyMapped && alreadyMapped.length > 0) {
-        if (alreadyMapped.length == 1 && alreadyMapped[0].uniqueId === itemId) {
-          return true;
+  private onMappingColumnChanged(item: IMappingFieldData, fieldId: string, option: any, updateFunction: any, errorFunction: any) {
+    let errorMsg: string = "";
+    let alreadyMapped = this.properties.mappingFieldsCollectionData && this.properties.mappingFieldsCollectionData.filter(element => element.TargetField === option.key);
+    if (alreadyMapped && alreadyMapped.length > 0) {
+      let sameType = alreadyMapped.filter(element => element.SPFieldType == item.SPFieldType);
+      if (sameType && sameType.length === alreadyMapped.length) {
+        let sameOrigin = alreadyMapped.filter(element => element.SiteCollectionSource == item.SiteCollectionSource && element.ListSourceField == item.ListSourceField);
+        if (sameOrigin && sameOrigin.length > 0) {
+          errorMsg = strings.LblErrorSameColumn;
         }
-        else { return alreadyMapped[0].SPFieldType === item.SPFieldType; }
       }
       else {
-        return !fieldOption.IsListTitle && !fieldOption.IsSiteTitle && !fieldOption.IsFileIcon;
+        errorMsg = strings.LblErrorDiferentRender;
       }
-    });
+    }
 
-    return freeOsSameTypeOptions && freeOsSameTypeOptions.map(field => {
-      return field.ColumnTitle;
-    });
+    errorFunction(fieldId, errorMsg);
+    updateFunction(fieldId, option.key);
   }
 
   private saveSiteCollectionLists(site: string, Lists: string[]) {
