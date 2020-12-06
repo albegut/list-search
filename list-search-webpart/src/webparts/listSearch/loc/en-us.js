@@ -65,7 +65,7 @@ define([], function () {
     GeneralPropertiesItemCountPlaceholder: "Use {itemCount} to insert items count number",
     GeneralPropertiesItemPerPage: "Items per page",
     ListSearchLoading: "Loading...",
-    StoragePropertiesGroupName: "Storage",
+    StoragePropertiesGroupName: "Cache",
     UseLocalStorage: "Use local storage",
     MinutesToCacheData: "Time (minutes) to cache the retreive data",
     OnClickEvent: "Use on click event",

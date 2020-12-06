@@ -2,6 +2,7 @@ import { WebPartContext } from "@microsoft/sp-webpart-base";
 import { IMappingFieldData, IListData, IDetailListFieldData, ICompleteModalData, IRedirectData } from "../model/IListConfigProps";
 import { IPropertyFieldSite, } from '@pnp/spfx-property-controls/lib/PropertyFieldSitePicker';
 import { IReadonlyTheme } from '@microsoft/sp-component-base';
+import { SharePointType } from "../model/ISharePointFieldTypes";
 
 
 export interface IListSearchProps {
@@ -43,4 +44,6 @@ export interface IListSearchProps {
   onSelectedItem: any;
   oneClickOption: boolean;
   groupByField: string;
+  groupByFieldType: SharePointType;
+  AnyCamlQuery: boolean;
 }

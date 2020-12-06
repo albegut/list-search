@@ -33,7 +33,7 @@ import { Modal } from 'office-ui-fabric-react/lib/Modal';
 import { Log } from '@microsoft/sp-core-library';
 import { IBaseFieldData } from '../model/IListConfigProps';
 import { Toggle } from 'office-ui-fabric-react/lib/Toggle';
-import { SharePointType } from '../model/ISharePointFieldTypes';
+import { SharePointFieldTypes, SharePointType } from '../model/ISharePointFieldTypes';
 import { Dropdown, IDropdownOption } from 'office-ui-fabric-react/lib/Dropdown';
 import { Persona, PersonaSize } from 'office-ui-fabric-react/lib/Persona';
 import { Facepile, OverflowButtonType, IFacepilePersona } from 'office-ui-fabric-react/lib/Facepile';
@@ -41,10 +41,8 @@ import StringUtils from '../services/Utils';
 import { Image, IImageProps, ImageFit } from 'office-ui-fabric-react/lib/Image';
 import { Link } from 'office-ui-fabric-react';
 import { FileTypeIcon, ApplicationType, IconType, ImageSize } from "@pnp/spfx-controls-react/lib/FileTypeIcon";
-import { CalendarType } from '@pnp/sp/fields';
-
-
-
+import IUserField from '../model/IUserField';
+import IUrlField from '../model/IUrlField';
 
 const LOG_SOURCE = "IListdSearchWebPart";
 const filterIcon: IIconProps = { iconName: 'Filter' };
@@ -125,7 +123,7 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
       let columns = this.AddColumnsToDisplay();
       let groupedItems = [];
       if (this.props.groupByField) {
-        groupedItems = this._groupBy(result, this.props.groupByField);
+        groupedItems = this._groupBy(result, this.props.groupByField, this.props.groupByFieldType);
         this._getGroups(groupedItems);
       }
 
@@ -585,12 +583,12 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
   }
 
   private GetJSXElementByType(item: any, fieldName: string, fieldType: SharePointType): JSX.Element {
-    const value = item[fieldName];
+    const value: any = this.GetItemValueFieldByFieldType(item, fieldName, fieldType);
     let result;
     switch (fieldType) {
       case SharePointType.FileIcon:
         {
-          result = this.GetFileIconByFileType(item.FileExtension);
+          result = this.GetFileIconByFileType(value);
           break;
         }
       case SharePointType.User:
@@ -614,16 +612,12 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
       case SharePointType.UserMulti:
         {
           if (value) {
-            let personas: IFacepilePersona[] = value.map(user => {
-              let email = StringUtils.GetUserEmail(user.Name);
-              return { imageUrl: email ? `/_layouts/15/userphoto.aspx?UserName=${email}` : undefined, personaName: user.Title, imageInitials: StringUtils.GetUserInitials(user.Title), };
-            });
             const overflowButtonProps = {
               ariaLabel: 'More users',
             };
             result = <Facepile
               personaSize={PersonaSize.size32}
-              personas={personas}
+              personas={value}
               maxDisplayablePersonas={3}
               overflowButtonType={OverflowButtonType.descriptive}
               overflowButtonProps={overflowButtonProps}
@@ -634,20 +628,11 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
           }
           break;
         }
-      case SharePointType.Taxonomy:
-        if (value && value.Term) {
-          result = <span>{value.Term}</span>;
-        }
-        else {
-          result = <span></span>
-        }
-        break;
       case SharePointType.TaxonomyMulti:
         {
           if (value) {
-            let labels = value.map(tax => { return tax.Label });
-            result = <span>{labels.map((val, index) => {
-              if (index + 1 == labels.lenght) {
+            result = <span>{value.map((val, index) => {
+              if (index + 1 == value.lenght) {
                 return <span>{val}</span>;
               }
               else {
@@ -662,8 +647,8 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
           break;
         }
       case SharePointType.Lookup:
-        if (value && value.Title) {
-          result = <Link href="#">{value.Title}</Link>;
+        if (value) {
+          result = <Link href="#">{value}</Link>;
         }
         else {
           result = <span></span>
@@ -671,9 +656,8 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
         break;
       case SharePointType.LookupMulti:
         if (value) {
-          let values = value.map(value => { return value.Title });
-          result = <span>{values.map((val, index) => {
-            if (index + 1 == values.lenght) {
+          result = <span>{value.map((val, index) => {
+            if (index + 1 == value.lenght) {
               return <Link href="#">{val}</Link>;
             }
             else {
@@ -715,16 +699,6 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
           }
           break;
         }
-      case SharePointType.Boolean:
-        {
-          if (value) {
-            result = <span>{value.toString()}</span>;
-          }
-          else {
-            result = <span></span>
-          }
-          break;
-        }
       case SharePointType.NoteFullHtml:
         {
           if (value) {
@@ -743,25 +717,151 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
     return result;
   }
 
-  private _groupBy(array, key): IGroupedItems[] {
+  private GetItemValueFieldByFieldType(item: any, field: string, type: SharePointType): any {
+    let result: any;
+    let value = item[field];
+    if (value) {
+      switch (type) {
+        case SharePointType.FileIcon:
+          {
+            result = item.FileExtension;
+            break;
+          }
+        case SharePointType.Boolean:
+          {
+            if (value) {
+              result = value.toString();
+            }
+            break;
+          }
+        case SharePointType.User:
+          {
+            if (value != undefined) {
+              let user: IUserField = {Name: value.Name, Email: value.Email};
+              result = user;
+            }
+            break;
+          }
+        case SharePointType.Url:
+        case SharePointType.Image:
+          {
+            if (value != undefined) {
+              let url: IUrlField = {Url: value.Url, Description: value.Description};
+              result = url;
+            }
+            break;
+          }
+        case SharePointType.UserName:
+          {
+            if (this.props.AnyCamlQuery) {
+              result = item['FieldValuesAsText'][field];
+            }
+            else {
+              result = value && value.Name;
+            }
+            break;
+          }
+        case SharePointType.UserEmail:
+          {
+            if (this.props.AnyCamlQuery) {
+              result = item['FieldValuesAsText'][field];
+            }
+            else {
+              result = value && value.EMail;
+            }
+            break;
+          }
+        case SharePointType.UserMulti:
+          {
+            let personas: IFacepilePersona[] = value.map(user => {
+              let email = StringUtils.GetUserEmail(user.Name);
+              return { imageUrl: email ? `/_layouts/15/userphoto.aspx?UserName=${email}` : undefined, personaName: user.Title, imageInitials: StringUtils.GetUserInitials(user.Title), };
+            });
+            result = personas;
+            break;
+          }
+        case SharePointType.Lookup:
+          {
+            result = value && value.Title;
+            break;
+          }
+        case SharePointType.LookupMulti:
+          {
+            result = value.map(value => { return value.Title });
+            break;
+          }
+        case SharePointType.DateTime:
+          {
+            result = value && new Date(value).toLocaleDateString('es-ES', {
+              year: "numeric",
+              month: "numeric",
+              day: "2-digit",
+              hour: "2-digit",
+              minute: "2-digit",
+              second: "2-digit",
+            });
+            break;
+          }
+        case SharePointType.Date:
+          {
+            result = value && new Date(value).toLocaleDateString('es-ES');
+            break;
+          }
+        case SharePointType.DateLongMonth:
+          {
+            result = value && new Date(value).toLocaleDateString('es-ES', {
+              year: "numeric",
+              month: "long",
+              day: "2-digit"
+            });
+            break;
+          }
+        case SharePointType.Taxonomy:
+          {
+            if (this.props.AnyCamlQuery) {
+              result = item['FieldValuesAsText'][field];
+            }
+            else {
+              if (value && value.Term) {
+                result = value.Term;
+              }
+            }
+            break;
+          }
+        case SharePointType.TaxonomyMulti:
+          {
+            result = value.map(tax => { return tax.Label });
+            break;
+          }
+        default:
+          {
+            result = value;
+            break;
+          }
+      }
+    }
+
+    return result;
+  }
+
+  private _groupBy(array, groupByField: string, groupByFieldType: SharePointType): IGroupedItems[] {
     let resArray: IGroupedItems[] = [];
     try {
-      if (key) {
+      if (groupByField) {
         let groupByObj = array.reduce((result, currentValue) => {
-          if (currentValue[key] != undefined) {
-            if (currentValue[key].Label !== undefined) {
-              (result[currentValue[key].Label] = result[currentValue[key].Label] || []).push(
-                currentValue
-              );
-            } else {
-              (result[currentValue[key]] = result[currentValue[key]] || []).push(
-                currentValue
-              );
-            }
+          let groupKey = this.GetItemValueFieldByFieldType(currentValue, groupByField, groupByFieldType);
+          if (groupKey != undefined) {
+            (result[groupKey] = result[groupKey] || []).push(
+              currentValue
+            );
+          }
+          else {
+            (result["Empty"] = result["Empty"] || []).push(
+              currentValue
+            );
           }
           return result;
         }, {});
-
         resArray = Object.keys(groupByObj).sort().map(group => {
           return { GroupName: group, Items: groupByObj[group] };
         });

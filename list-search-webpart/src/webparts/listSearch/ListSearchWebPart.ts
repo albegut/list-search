@@ -60,7 +60,7 @@ export interface IListSearchWebPartProps {
   ItemLimit: number;
   ShowPagination: boolean;
   ItemsInPage: number;
-  UseLocalStorage: boolean;
+  UseCache: boolean;
   minutesToCache: number;
   onClickSelectedOption: string;
   clickEnabled: boolean;
@@ -73,6 +73,7 @@ export interface IListSearchWebPartProps {
   onRedirectIdQuery: string;
   onClickNumberOfClicksOption: string;
   groupByField: string;
+  groupByFieldType: SharePointType;
   groupedByField: boolean;
 }
 
@@ -263,7 +264,7 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
           ShowPagination: this.properties.ShowPagination,
           ItemsInPage: this.properties.ItemsInPage,
           themeVariant: this._themeVariant,
-          UseLocalStorage: this.properties.UseLocalStorage,
+          UseLocalStorage: this.properties.UseCache,
           minutesToCache: this.properties.minutesToCache,
           clickEnabled: this.properties.clickEnabled,
           clickIsSimpleModal: this.properties.clickIsSimpleModal,
@@ -275,7 +276,9 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
           onRedirectIdQuery: this.properties.onRedirectIdQuery,
           onSelectedItem: this.onSelectedItem.bind(this),
           oneClickOption: this.properties.onClickNumberOfClicksOption == "oneClick",
-          groupByField: this.properties.groupByField
+          groupByField: this.properties.groupByField,
+          AnyCamlQuery: (this.properties.listsCollectionData.findIndex(listConfig => listConfig.Query != undefined || listConfig.ListView != undefined) > 0),
+          groupByFieldType: this.properties.groupByFieldType
         }
       );
       renderElement = element;
@@ -361,7 +364,7 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
               this.properties.detailListFieldsCollectionData = [];
             }
             if (!this.properties.detailListFieldsCollectionData.some(field => field.IsFileIcon)) {
-              this.properties.detailListFieldsCollectionData.push({ ColumnTitle: "FileIcon", IsListTitle: false, IsSiteTitle: false, Searcheable: false, IsFileIcon:  true, MaxColumnWidth: 30, MinColumnWidth: 30 });
+              this.properties.detailListFieldsCollectionData.push({ ColumnTitle: "FileIcon", IsListTitle: false, IsSiteTitle: false, Searcheable: false, IsFileIcon: true, MaxColumnWidth: 30, MinColumnWidth: 30 });
             }
           }
           break;
@@ -436,6 +439,16 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
       case "groupedByField":
         {
           if (newValue) {
+            this.properties.ShowPagination = false;
+            this.properties.groupByField = "";
+            this.context.propertyPane.refresh();
+          }
+          break;
+        }
+      case "ShowPagination":
+        {
+          if (newValue) {
+            this.properties.groupedByField = false;
             this.properties.groupByField = "";
             this.context.propertyPane.refresh();
           }
@@ -566,12 +579,12 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
     let groupByFieldPropertyPane = this.properties.groupedByField ? PropertyPaneDropdown('groupByField', {
       label: strings.GroupFieldOptionsToSelect,
       selectedKey: this.properties.groupByField,
-      options: this.properties.detailListFieldsCollectionData.map(field => {
+      options: this.properties.detailListFieldsCollectionData.filter(field => !field.IsFileIcon).map(field => {
         return { key: field.ColumnTitle, text: field.ColumnTitle };
       }),
     }) : emptyProperty;
 
-    let cacheTimePropertyPane = this.properties.UseLocalStorage ? PropertyFieldNumber("minutesToCache", {
+    let cacheTimePropertyPane = this.properties.UseCache ? PropertyFieldNumber("minutesToCache", {
       key: "minutesToCache",
       label: strings.MinutesToCacheData,
       value: this.properties.minutesToCache || null,
@@ -773,50 +786,6 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
               ]
             },
             {
-              groupName: strings.GeneralPropertiesGroup,
-              isCollapsed: true,
-              groupFields: [
-                PropertyPaneToggle('ShowItemCount', {
-                  label: strings.GeneralPropertiesShowItemCount,
-                }),
-                ItemCountTextFieldPropertyPane,
-                PropertyFieldNumber("ItemLimit", {
-                  key: "ItemLimit",
-                  label: strings.GeneralPropertiesRowLimitLabel,
-                  description: strings.GeneralPropertiesRowLimitDescription,
-                  value: this.properties.ItemLimit || null,
-                }),
-                PropertyPaneToggle('ShowPagination', {
-                  label: strings.GeneralPropertiesShowPagination,
-                  checked: this.properties.ShowPagination && !this.properties.groupedByField,
-                  disabled: this.properties.groupedByField
-                }),
-                ItemsInPagePropertyPane
-              ]
-            },
-            {
-              groupName: strings.OnClickPropertiesGroup,
-              isCollapsed: true,
-              groupFields: [
-                PropertyPaneToggle('clickEnabled', {
-                  label: strings.OnClickEvent,
-                }),
-                onClickNumberOfClicksOptionPropertyPane,
-                onclickEventOptionPropertyPane,
-                onClickCompleteModalPropertyPane,
-                onclickRedirectPropertyPane,
-                onClickRedirectIdQueryParamProperyPane
-              ]
-            }
-          ]
-        },
-        {
-          header: {
-            description: strings.FieldPropertiesGroup
-          },
-          displayGroupsAsAccordion: true,
-          groups: [
-            {
               groupName: strings.DisplayFieldsPropertiesGroup,
               isCollapsed: true,
               groupFields: [
@@ -898,13 +867,7 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
                       defaultValue: true
                     }
                   ],
-                }),
-                PropertyPaneToggle('groupedByField', {
-                  label: strings.GeneralPropertiesGroupByField,
-                  checked: this.properties.detailListFieldsCollectionData && this.properties.detailListFieldsCollectionData.length > 0 && this.properties.groupedByField,
-                  disabled: !(this.properties.detailListFieldsCollectionData && this.properties.detailListFieldsCollectionData.length)
-                }),
-                groupByFieldPropertyPane,
+                })
               ]
             },
             {
@@ -954,10 +917,11 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
                       title: strings.CollectionDataFieldsTargetField,
                       type: CustomCollectionFieldType.custom,
                       required: true,
+                      onGetErrorMessage: (value: any, index: number, crntItem: any) => this.CheckSameSiteColumn(value, index, crntItem),
                       onCustomRender: (field, value, onUpdate, item, itemId, onError) => {
                         if (item.SiteCollectionSource && item.ListSourceField && item.SourceField) {
                           return (
-                            CustomCollectionDataField.getPickerByStringOptions(this.getFreeTargetColumn(item), field, item, onUpdate, undefined)
+                            CustomCollectionDataField.getPickerByStringOptions(this.getFreeTargetColumn(item, itemId), field, item, onUpdate, onError)
                           );
                         }
                       }
@@ -981,6 +945,56 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
 
                 })]
             }
+          ]
+        },
+        {
+          header: {
+            description: strings.FieldPropertiesGroup
+          },
+          displayGroupsAsAccordion: true,
+          groups: [
+            {
+              groupName: strings.GeneralPropertiesGroup,
+              isCollapsed: true,
+              groupFields: [
+                PropertyPaneToggle('ShowItemCount', {
+                  label: strings.GeneralPropertiesShowItemCount,
+                }),
+                ItemCountTextFieldPropertyPane,
+                PropertyFieldNumber("ItemLimit", {
+                  key: "ItemLimit",
+                  label: strings.GeneralPropertiesRowLimitLabel,
+                  description: strings.GeneralPropertiesRowLimitDescription,
+                  value: this.properties.ItemLimit || null,
+                }),
+                PropertyPaneToggle('ShowPagination', {
+                  label: strings.GeneralPropertiesShowPagination,
+                  checked: this.properties.ShowPagination && !this.properties.groupedByField,
+                }),
+                ItemsInPagePropertyPane,
+                PropertyPaneToggle('groupedByField', {
+                  label: strings.GeneralPropertiesGroupByField,
+                  checked: this.properties.detailListFieldsCollectionData && this.properties.detailListFieldsCollectionData.length > 0 && this.properties.groupedByField && !this.properties.ShowPagination,
+                  disabled: !(this.properties.detailListFieldsCollectionData && this.properties.detailListFieldsCollectionData.length)
+                }),
+                groupByFieldPropertyPane,
+              ]
+            },
+            {
+              groupName: strings.OnClickPropertiesGroup,
+              isCollapsed: true,
+              groupFields: [
+                PropertyPaneToggle('clickEnabled', {
+                  label: strings.OnClickEvent,
+                }),
+                onClickNumberOfClicksOptionPropertyPane,
+                onclickEventOptionPropertyPane,
+                onClickCompleteModalPropertyPane,
+                onclickRedirectPropertyPane,
+                onClickRedirectIdQueryParamProperyPane
+              ]
+            },
+
           ]
         },
         {
@@ -1016,9 +1030,9 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
               groupName: strings.StoragePropertiesGroupName,
               isCollapsed: true,
               groupFields: [
-                PropertyPaneToggle('UseLocalStorage', {
+                PropertyPaneToggle('UseCache', {
                   label: strings.UseLocalStorage,
-                  checked: this.properties.UseLocalStorage
+                  checked: this.properties.UseCache
                 }),
                 cacheTimePropertyPane
               ],
@@ -1048,7 +1062,6 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
 
   private GetRenderOptionsByType(SPFieldType: string): string[] {
     let result = [SPFieldType];
-
     switch (SPFieldType) {
       case SharePointType.Text:
       case SharePointType.Note:
@@ -1063,25 +1076,57 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
           result = [SharePointType.Url, SharePointType.Image];
           break;
         }
+      case SharePointType.User:
+      case SharePointType.UserEmail:
+      case SharePointType.UserName:
+        {
+          result = [SharePointType.UserEmail, SharePointType.UserName, SharePointType.User];
+          break;
+        }
+      case SharePointType.DateTime:
+      case SharePointType.Date:
+      case SharePointType.DateLongMonth:
+        {
+          result = [SharePointType.Date, SharePointType.DateTime, SharePointType.DateLongMonth];
+          break;
+        }
     }
 
     return result;
   }
 
-  private getFreeTargetColumn(item: any): string[] {
+  private getFreeTargetColumn(item: any, itemId: string): string[] {
     let freeOsSameTypeOptions = this.properties.detailListFieldsCollectionData.filter(fieldOption => {
-      let alreadyMapped = this.properties.mappingFieldsCollectionData.find(element => element.TargetField === fieldOption.ColumnTitle);
-      if (alreadyMapped) {
-        return alreadyMapped.SPFieldType === item.SPFieldType;
+      let alreadyMapped = this.properties.mappingFieldsCollectionData && this.properties.mappingFieldsCollectionData.filter(element => element.TargetField === fieldOption.ColumnTitle);
+      if (alreadyMapped && alreadyMapped.length > 0) {
+        if (alreadyMapped.length == 1 && alreadyMapped[0].uniqueId === itemId) {
+          return true;
+        }
+        else { return alreadyMapped[0].SPFieldType === item.SPFieldType; }
       }
       else {
-        return !fieldOption.IsListTitle && !fieldOption.IsSiteTitle;
+        return !fieldOption.IsListTitle && !fieldOption.IsSiteTitle && !fieldOption.IsFileIcon;
       }
     });
 
     return freeOsSameTypeOptions && freeOsSameTypeOptions.map(field => {
       return field.ColumnTitle;
     });
+  }
+
+  private CheckSameSiteColumn(value: any, index: number, crntItem: IMappingFieldData): string {
+    debugger
+    let result: string = "";
+    let sameField = this.properties.mappingFieldsCollectionData.filter(mappingElement => mappingElement.TargetField === value);
+    if (sameField && sameField.length > 0) {
+      sameField.map(element => {
+        if (element.SiteCollectionSource === crntItem.SiteCollectionSource && element.ListSourceField === crntItem.ListSourceField && element.uniqueId != crntItem.uniqueId) {
+          result = "There are already one field mapping to the same list";
+        }
+      });
+    }
+
+    return result;
   }
 
   private saveSiteCollectionLists(site: string, Lists: string[]) {

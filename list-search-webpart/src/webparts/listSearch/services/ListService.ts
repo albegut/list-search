@@ -37,10 +37,12 @@ export default class ListService implements IListService {
   }
 
   private GetViewFieldsWithId(listQueryOptions: IListSearchListQuery): QueryHelperEntity {
-    let result: QueryHelperEntity = { expandFields: [], viewFields: ['ServerUrl','FileLeafRef'] };
+    let result: QueryHelperEntity = { expandFields: [], viewFields: ['ServerUrl', 'FileLeafRef'] };
     listQueryOptions.fields.map(field => {
       switch (field.fieldType) {
         case SharePointType.User:
+        case SharePointType.UserEmail:
+        case SharePointType.UserName:
           result.viewFields.push(`${field.originalField}/EMail`);
           result.viewFields.push(`${field.originalField}/Name`);
           result.expandFields.push(`${field.originalField}`);

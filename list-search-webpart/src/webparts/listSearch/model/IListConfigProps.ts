@@ -10,6 +10,7 @@ export interface IBaseFieldData {
 
 
 export interface IMappingFieldData extends IBaseFieldData {
+  uniqueId: string;
   Order: number;
   sortIdx: number;
 }

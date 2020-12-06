@@ -35,18 +35,18 @@ export default class CustomCollectionDataField {
     return this.getCustomCollectionDropDown(currentOptions, field, row, updateFunction);
   }
 
-  public static getPickerByStringOptions(possibleOptions: Array<string>, field: ICustomCollectionField, row: IListData, updateFunction: any, customOnChange: any): JSX.Element {
+  public static getPickerByStringOptions(possibleOptions: Array<string>, field: ICustomCollectionField, row: IListData, updateFunction: any, customOnChange: any, customError?: any): JSX.Element {
     let options = [];
     if (possibleOptions) {
       options = possibleOptions.map(option => { return { key: option, text: option }; });
     }
-    return this.getCustomCollectionDropDown(options, field, row, updateFunction, null, customOnChange);
+    return this.getCustomCollectionDropDown(options, field, row, updateFunction, customError, customOnChange);
   }
 
   public static getFieldPickerByList(possibleOptions: Array<IListField>, field: ICustomCollectionField, row: IListData, updateFunction: any, customOnchangeFunction?: any, customOptions?: Array<ICustomOption>): JSX.Element {
     let options = [];
     if (possibleOptions) {
-      options = possibleOptions.map(option => { return { key: option.InternalName, text: option.Title, FieldType: option.TypeAsString }; });
+      options = possibleOptions.map(option => { return { key: option.InternalName, text: option.Title, title: option.InternalName, FieldType: option.TypeAsString }; });
     }
     if (customOptions) {
       customOptions.map(option => {
