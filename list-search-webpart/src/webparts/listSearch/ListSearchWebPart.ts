@@ -446,6 +446,10 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
             this.properties.groupByField = "";
             this.context.propertyPane.refresh();
           }
+          else {
+            this.properties.groupByField = "";
+            this.context.propertyPane.refresh();
+          }
           break;
         }
       case "ShowPagination":

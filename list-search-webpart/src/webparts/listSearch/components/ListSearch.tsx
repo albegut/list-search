@@ -938,7 +938,7 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
                       <DetailsList
                         items={this._getItems()}
                         columns={this.state.columns}
-                        groups={this.groups}
+                        groups={this.props.groupByField && this.groups}
                         groupProps={{
                           showEmptyGroups: true,
                           isAllGroupsCollapsed: true,
