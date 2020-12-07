@@ -13,7 +13,7 @@ export default class StringUtils {
     if (text && text.indexOf('|') > 0) {
       let splited = text.split('|');
       if (splited && splited.length > 1) {
-        result = splited[2]
+        result = splited[2];
       }
     }
     return result;

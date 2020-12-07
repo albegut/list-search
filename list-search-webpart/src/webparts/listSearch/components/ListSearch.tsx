@@ -89,7 +89,7 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
     this.SetError(error, "ComponentDidCatch");
   }
 
-  private SetError(error: Error, methodName: string) {
+  private SetError(error: any, methodName: string) {
     Log.warn(LOG_SOURCE, `${methodName} set an error`, this.props.Context.serviceScope);
     Log.error(LOG_SOURCE, error, this.props.Context.serviceScope);
     this.setState({
@@ -142,7 +142,7 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
   }
 
   private AddColumnsToDisplay(): IColumn[] {
-    let columns: IColumn[] = []
+    let columns: IColumn[] = [];
     this.props.detailListFieldsCollectionData.sort().map(column => {
       let mappingType = this.props.mappingFieldsCollectionData.find(e => e.TargetField === column.ColumnTitle);
       columns.push({ key: column.ColumnTitle, name: column.ColumnTitle, fieldName: column.ColumnTitle, minWidth: column.MinColumnWidth || 50, maxWidth: column.MaxColumnWidth || undefined, isResizable: true, data: mappingType ? mappingType.SPFieldType : (column.IsFileIcon ? SharePointType.FileIcon : SharePointType.Text), onColumnClick: this._onColumnClick, isIconOnly: column.IsFileIcon });
@@ -228,7 +228,7 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
       this.filterListItemsByColumnsFilter(itemsToRefine, newFitlers, false);
     }
     catch (error) {
-      this.SetError(error, "filterColumnListItems")
+      this.SetError(error, "filterColumnListItems");
     }
   }
 
@@ -334,7 +334,7 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
     let result = [];
     if (this.state.filterItems) {
       if (this.props.groupByField) {
-        this.state.groupedItems.map(group => { result = [...result, ...group.Items] });
+        this.state.groupedItems.map(group => { result = [...result, ...group.Items]; });
       }
       else {
         if (this.props.ShowPagination) {
@@ -361,7 +361,13 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
 
   private async GetCompleteItemData(item: any) {
     let listService: ListService = new ListService(item.SiteUrl, this.props.UseCache, this.props.minutesToCache, this.props.CacheType);
-    let completeItem = await listService.getListItemById(item.ListName, item.Id);
+
+    let completeItemQueryOptions: IListSearchListQuery = {
+      list: item.ListName,
+      fields: this.props.completeModalFields.map(field => { return { originalField: field.SourceField, newField: field.TargetField, fieldType: field.SPFieldType }; })
+    };
+
+    let completeItem = await listService.getListItemById(completeItemQueryOptions, item.Id);
     if (completeItem) {
       completeItem.SiteUrl = item.SiteUrl;
       completeItem.ListName = item.ListName;
@@ -397,7 +403,7 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
         }
       }
     } catch (error) {
-      this.SetError(error, "GetOnClickAction")
+      this.SetError(error, "GetOnClickAction");
     }
   }
 
@@ -434,7 +440,7 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
         <div className={styles.bodyModal}>
           {this.getBodyModal()}
         </div>
-      </Modal>
+      </Modal>;
     return modal;
   }
 
@@ -449,7 +455,7 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
                 <div className={styles.propertyModal}>
                   {val.TargetField}
                 </div>
-                {this.GetModalBodyRenderByFieldType(this.state.selectedItem, val)}
+                {this.GetModalBodyRenderByFieldType(this.state.selectedItem, val.TargetField, val.SPFieldType)}
               </>;
             })
         }
@@ -457,14 +463,14 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
     }
     else {
       body = <>
-        {this.props.completeModalFields.filter(field => field.SiteCollectionSource == this.state.selectedItem.SiteUrl &&
+        {this.props.completeModalFields && this.props.completeModalFields.filter(field => field.SiteCollectionSource == this.state.selectedItem.SiteUrl &&
           field.ListSourceField == this.state.selectedItem.ListName).map(val => {
             return <>
               <div className={styles.propertyModal}>
                 {val.TargetField}
               </div>
               <div>
-                {this.state.isModalLoading ? <Shimmer /> : this.GetModalBodyRenderByFieldType(this.state.completeModalItemData, val)}
+                {this.state.isModalLoading ? <Shimmer /> : this.GetModalBodyRenderByFieldType(this.state.completeModalItemData, val.SourceField, val.SPFieldType)}
               </div>
             </>;
           })
@@ -487,7 +493,7 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
       :
       <>
         {defaultRender({ ...detailrow })}
-      </>
+      </>;
   }
 
   private _renderItemColumn(item: any, index: number, column: IColumn): JSX.Element {
@@ -495,22 +501,22 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
     return result;
   }
 
-  private GetModalBodyRenderByFieldType(item: any, config: IBaseFieldData): JSX.Element {
-    let result = this.GetJSXElementByType(item, config.TargetField, config.SPFieldType);
+  private GetModalBodyRenderByFieldType(item: any, propertyName: string, fieldType: SharePointType): JSX.Element {
+    let result = this.GetJSXElementByType(item, propertyName, fieldType, true);
 
-    switch (config.SPFieldType) {
+    switch (fieldType) {
       case SharePointType.Boolean:
-        result = <Toggle checked={item[config.TargetField]} />;
+        result = <Toggle checked={item[propertyName]} />;
         break;
       case SharePointType.Choice:
         const options: IDropdownOption[] = [
-          { key: item[config.TargetField], text: item[config.TargetField] },
+          { key: item[propertyName], text: item[propertyName] },
         ];
         <Dropdown
           label="Disabled example with defaultSelectedKey"
           options={options}
           disabled={true}
-        />
+        />;
         break;
     }
 
@@ -584,8 +590,8 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
     return result;
   }
 
-  private GetJSXElementByType(item: any, fieldName: string, fieldType: SharePointType): JSX.Element {
-    const value: any = this.GetItemValueFieldByFieldType(item, fieldName, fieldType);
+  private GetJSXElementByType(item: any, fieldName: string, fieldType: SharePointType, ommitCamlQuery: boolean = false): JSX.Element {
+    const value: any = this.GetItemValueFieldByFieldType(item, fieldName, fieldType, ommitCamlQuery);
     let result;
     switch (fieldType) {
       case SharePointType.FileIcon:
@@ -595,38 +601,56 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
         }
       case SharePointType.User:
         {
-          if (value && value.Name) {
-            result = <Persona
-              {...{
-                imageUrl: value.Email ? `/_layouts/15/userphoto.aspx?UserName=${value.Email}` : undefined,
-                imageInitials: StringUtils.GetUserInitials(value.Name),
-                text: value.Name
-              }}
-              size={PersonaSize.size32}
-              hidePersonaDetails={false}
-            />
+          if (this.props.AnyCamlQuery && !ommitCamlQuery) {
+            result = <span>{value}</span>;
           }
           else {
-            result = <span></span>
+            if (value && value.Name) {
+              result = <Persona
+                {...{
+                  imageUrl: value.Email ? `/_layouts/15/userphoto.aspx?UserName=${value.Email}` : undefined,
+                  imageInitials: StringUtils.GetUserInitials(value.Name),
+                  text: value.Name
+                }}
+                size={PersonaSize.size32}
+                hidePersonaDetails={false}
+              />;
+            }
+            else {
+              result = <span></span>;
+            }
           }
           break;
         }
       case SharePointType.UserMulti:
         {
-          if (value) {
-            const overflowButtonProps = {
-              ariaLabel: 'More users',
-            };
-            result = <Facepile
-              personaSize={PersonaSize.size32}
-              personas={value}
-              maxDisplayablePersonas={3}
-              overflowButtonType={OverflowButtonType.descriptive}
-              overflowButtonProps={overflowButtonProps}
-            />
+          if (this.props.AnyCamlQuery && !ommitCamlQuery && value && value.length > 0) {
+            result = <span>{value.map((val, index) => {
+              if (index + 1 == value.length) {
+                return <span>{val}</span>;
+              }
+              else {
+                return <span>{val}<br></br></span>;
+              }
+            })}
+            </span>;
           }
           else {
-            result = <span></span>
+            if (value) {
+              const overflowButtonProps = {
+                ariaLabel: 'More users',
+              };
+              result = <Facepile
+                personaSize={PersonaSize.size32}
+                personas={value}
+                maxDisplayablePersonas={3}
+                overflowButtonType={OverflowButtonType.descriptive}
+                overflowButtonProps={overflowButtonProps}
+              />;
+            }
+            else {
+              result = <span></span>;
+            }
           }
           break;
         }
@@ -634,17 +658,17 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
         {
           if (value) {
             result = <span>{value.map((val, index) => {
-              if (index + 1 == value.lenght) {
+              if (index + 1 == value.length) {
                 return <span>{val}</span>;
               }
               else {
                 return <span>{val}<br></br></span>;
               }
             })}
-            </span>
+            </span>;
           }
           else {
-            result = <span></span>
+            result = <span></span>;
           }
           break;
         }
@@ -653,23 +677,39 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
           result = <Link href="#">{value}</Link>;
         }
         else {
-          result = <span></span>
+          result = <span></span>;
+        }
+        break;
+      case SharePointType.ChoiceMulti:
+        if (value) {
+          result = <span>{value.map((val, index) => {
+            if (index + 1 == value.length) {
+              return <span>{val}</span>;
+            }
+            else {
+              return <span>{val}<br></br></span>;
+            }
+          })}
+          </span>;
+        }
+        else {
+          result = <span></span>;
         }
         break;
       case SharePointType.LookupMulti:
         if (value) {
           result = <span>{value.map((val, index) => {
-            if (index + 1 == value.lenght) {
+            if (index + 1 == value.length) {
               return <Link href="#">{val}</Link>;
             }
             else {
               return <span><Link href="#">{val}</Link><br></br></span>;
             }
           })}
-          </span>
+          </span>;
         }
         else {
-          result = <span></span>
+          result = <span></span>;
         }
         break;
       case SharePointType.Url:
@@ -677,7 +717,7 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
           result = <Link href={value.Url}>{value.Description}</Link>;
         }
         else {
-          result = <span></span>
+          result = <span></span>;
         }
         break;
       case SharePointType.Image:
@@ -694,10 +734,10 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
               {...imageProps}
               src={value.Url}
               alt={value.Description}
-            />
+            />;
           }
           else {
-            result = <span></span>
+            result = <span></span>;
           }
           break;
         }
@@ -707,7 +747,7 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
             result = <span dangerouslySetInnerHTML={{ __html: value }}></span>;
           }
           else {
-            result = <span></span>
+            result = <span></span>;
           }
           break;
         }
@@ -719,7 +759,7 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
     return result;
   }
 
-  private GetItemValueFieldByFieldType(item: any, field: string, type: SharePointType): any {
+  private GetItemValueFieldByFieldType(item: any, field: string, type: SharePointType, ommitCamlQuery: boolean = false): any {
     let result: any;
     let value = item[field];
     if (value) {
@@ -738,9 +778,14 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
           }
         case SharePointType.User:
           {
-            if (value != undefined) {
-              let user: IUserField = { Name: value.Name, Email: value.Email };
-              result = user;
+            if (this.props.AnyCamlQuery && !ommitCamlQuery) {
+              result = value;
+            }
+            else {
+              if (value != undefined) {
+                let user: IUserField = { Name: value.Name, Email: value.Email };
+                result = user;
+              }
             }
             break;
           }
@@ -755,8 +800,8 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
           }
         case SharePointType.UserName:
           {
-            if (this.props.AnyCamlQuery) {
-              result = item['FieldValuesAsText'][field];
+            if (this.props.AnyCamlQuery && !ommitCamlQuery) {
+              result = value;
             }
             else {
               result = value && value.Name;
@@ -765,8 +810,8 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
           }
         case SharePointType.UserEmail:
           {
-            if (this.props.AnyCamlQuery) {
-              result = item['FieldValuesAsText'][field];
+            if (this.props.AnyCamlQuery && !ommitCamlQuery) {
+              result = value;
             }
             else {
               result = value && value.EMail;
@@ -775,26 +820,51 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
           }
         case SharePointType.UserMulti:
           {
-            let personas: IFacepilePersona[] = value.map(user => {
-              let email = StringUtils.GetUserEmail(user.Name);
-              return { imageUrl: email ? `/_layouts/15/userphoto.aspx?UserName=${email}` : undefined, personaName: user.Title, imageInitials: StringUtils.GetUserInitials(user.Title), };
-            });
-            result = personas;
+            if (this.props.AnyCamlQuery && !ommitCamlQuery) {
+              result = value ? value.split(';') : "";
+            }
+            else {
+              let personas: IFacepilePersona[] = value.map(user => {
+                let email = StringUtils.GetUserEmail(user.Name);
+                return { imageUrl: email ? `/_layouts/15/userphoto.aspx?UserName=${email}` : undefined, personaName: user.Title, imageInitials: StringUtils.GetUserInitials(user.Title), };
+              });
+              result = personas;
+            }
             break;
           }
         case SharePointType.Lookup:
           {
-            result = value && value.Title;
+            if (this.props.AnyCamlQuery && !ommitCamlQuery) {
+              result = value;
+            }
+            else {
+              result = value && value.Title;
+            }
+            break;
+          }
+        case SharePointType.ChoiceMulti:
+          {
+            if (this.props.AnyCamlQuery && !ommitCamlQuery && value) {
+              result = value.split(',');
+            }
+            else {
+              result = value;
+            }
             break;
           }
         case SharePointType.LookupMulti:
           {
-            result = value.map(value => { return value.Title });
+            if (this.props.AnyCamlQuery && !ommitCamlQuery && value) {
+              result = value.split(';');
+            }
+            else {
+              result = value.map(value => { return value.Title; });
+            }
             break;
           }
         case SharePointType.DateTime:
           {
-            result = value && new Date(value).toLocaleDateString('es-ES', {
+            result = value && new Date(value).toLocaleDateString(this.props.Context.pageContext.cultureInfo.currentCultureName, {
               year: "numeric",
               month: "numeric",
               day: "2-digit",
@@ -806,12 +876,12 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
           }
         case SharePointType.Date:
           {
-            result = value && new Date(value).toLocaleDateString('es-ES');
+            result = value && new Date(value).toLocaleDateString(this.props.Context.pageContext.cultureInfo.currentCultureName);
             break;
           }
         case SharePointType.DateLongMonth:
           {
-            result = value && new Date(value).toLocaleDateString('es-ES', {
+            result = value && new Date(value).toLocaleDateString(this.props.Context.pageContext.cultureInfo.currentCultureName, {
               year: "numeric",
               month: "long",
               day: "2-digit"
@@ -820,8 +890,8 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
           }
         case SharePointType.Taxonomy:
           {
-            if (this.props.AnyCamlQuery) {
-              result = item['FieldValuesAsText'][field];
+            if (this.props.AnyCamlQuery && !ommitCamlQuery) {
+              result = item[field];
             }
             else {
               if (value && value.Term) {
@@ -832,7 +902,7 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
           }
         case SharePointType.TaxonomyMulti:
           {
-            result = value.map(tax => { return tax.Label });
+            result = value.map(tax => { return tax.Label; });
             break;
           }
         default:
@@ -869,7 +939,7 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
         });
       }
     } catch (error) {
-      this.SetError(error, '_groupBy')
+      this.SetError(error, '_groupBy');
     }
 
     return resArray;
@@ -895,7 +965,7 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
     });
     if (this.props.groupByField) {
 
-      const newGroupedElements = this.state.groupedItems.map(group => { return { GroupName: group.GroupName, Items: this._copyAndSort(group.Items, currColumn.fieldName!, currColumn.isSortedDescending) } });
+      const newGroupedElements = this.state.groupedItems.map(group => { return { GroupName: group.GroupName, Items: this._copyAndSort(group.Items, currColumn.fieldName!, currColumn.isSortedDescending) }; });
       this.setState({ columns: newColumns, groupedItems: newGroupedElements });
     }
     else {

@@ -38,56 +38,132 @@ export default class ListService implements IListService {
     this.baseUrl = siteUrl;
   }
 
-  private GetViewFieldsWithId(listQueryOptions: IListSearchListQuery): QueryHelperEntity {
-    let result: QueryHelperEntity = { expandFields: [], viewFields: ['ServerUrl', 'FileLeafRef'] };
+  private GetViewFieldsWithId(listQueryOptions: IListSearchListQuery, isCamlQuery: boolean): QueryHelperEntity {
+    let result: QueryHelperEntity = { expandFields: [], viewFields: ['ServerUrl', 'FileLeafRef', 'Id'] };
+    let hasToAddFieldsAsText: boolean = false;
     listQueryOptions.fields.map(field => {
       switch (field.fieldType) {
         case SharePointType.User:
         case SharePointType.UserEmail:
         case SharePointType.UserName:
-          result.viewFields.push(`${field.originalField}/EMail`);
-          result.viewFields.push(`${field.originalField}/Name`);
-          result.expandFields.push(`${field.originalField}`);
+          if (isCamlQuery) {
+            hasToAddFieldsAsText = true;
+            result.viewFields.push(field.originalField);
+          }
+          else {
+            result.viewFields.push(`${field.originalField}/EMail`);
+            result.viewFields.push(`${field.originalField}/Name`);
+            result.expandFields.push(`${field.originalField}`);
+          }
           break;
         case SharePointType.UserMulti:
-          result.viewFields.push(`${field.originalField}/Title`);
-          result.viewFields.push(`${field.originalField}/Name`);
-          result.expandFields.push(`${field.originalField}`);
+          if (isCamlQuery) {
+            hasToAddFieldsAsText = true;
+            result.viewFields.push(field.originalField);
+          }
+          else {
+            result.viewFields.push(`${field.originalField}/Title`);
+            result.viewFields.push(`${field.originalField}/Name`);
+            result.expandFields.push(`${field.originalField}`);
+          }
           break;
         case SharePointType.Lookup:
         case SharePointType.LookupMulti:
-          result.viewFields.push(`${field.originalField}/Title`);
-          result.expandFields.push(`${field.originalField}`);
+          if (isCamlQuery) {
+            hasToAddFieldsAsText = true;
+            result.viewFields.push(field.originalField);
+          }
+          else {
+            result.viewFields.push(`${field.originalField}/Title`);
+            result.expandFields.push(`${field.originalField}`);
+          }
           break;
         case SharePointType.Taxonomy:
-          if (!result.viewFields.find(e => e === "TaxCatchAll/Term")) {
-            result.viewFields.push("TaxCatchAll/Term");
+          if (isCamlQuery) {
+            hasToAddFieldsAsText = true;
+            result.viewFields.push(field.originalField);
           }
-          if (!result.viewFields.find(e => e === "TaxCatchAll/ID")) {
-            result.viewFields.push("TaxCatchAll/ID");
+          else {
+            if (!result.viewFields.find(e => e === "TaxCatchAll/Term")) {
+              result.viewFields.push("TaxCatchAll/Term");
+            }
+            if (!result.viewFields.find(e => e === "TaxCatchAll/ID")) {
+              result.viewFields.push("TaxCatchAll/ID");
+            }
+            result.viewFields.push(field.originalField);
+            result.expandFields.push("TaxCatchAll");
           }
-          result.viewFields.push(field.originalField);
-          result.expandFields.push("TaxCatchAll");
           break;
         default:
           {
-            result.viewFields.push(field.originalField);
+            if (field.originalField != "ListName" && field.originalField != "SiteUrl") {
+              result.viewFields.push(field.originalField);
+            }
             break;
           }
       }
     });
 
+    if (hasToAddFieldsAsText) {
+      result.expandFields.push('FieldValuesAsText');
+    }
+
     return result;
   }
 
-  private GetItemValue(item: any, field: any): any {
+  private GetItemValue(item: any, field: any, fromCamlQuery: boolean): any {
     switch (field.fieldType) {
+      case SharePointType.Lookup:
+      case SharePointType.LookupMulti:
+        if (fromCamlQuery) {
+          item[field.newField] = item['FieldValuesAsText'][field.originalField];
+        }
+        else {
+          item[field.newField] = item[field.originalField];
+          if (field.newField !== field.originalField) {
+            delete item[field.originalField];
+          }
+        }
+        break;
+      case SharePointType.User:
+      case SharePointType.UserEmail:
+      case SharePointType.UserName:
+        {
+          if (fromCamlQuery) {
+            item[field.newField] = item['FieldValuesAsText'][field.originalField];
+          }
+          else {
+            item[field.newField] = item[field.originalField];
+            if (field.newField !== field.originalField) {
+              delete item[field.originalField];
+            }
+          }
+          break;
+        }
+      case SharePointType.UserMulti:
+        {
+          if (fromCamlQuery) {
+            item[field.newField] = item['FieldValuesAsText'][field.originalField];
+          }
+          else {
+            item[field.newField] = item[field.originalField];
+            if (field.newField !== field.originalField) {
+              delete item[field.originalField];
+            }
+          }
+          break;
+        }
       case SharePointType.Taxonomy:
         {
-          let taxonomyValues = item["TaxCatchAll"];
-          let taxonomyTerm = taxonomyValues.find(t => t.ID === item[field.originalField].WssId);
-          if (taxonomyTerm) {
-            item[field.newField] = taxonomyTerm;
+          if (fromCamlQuery) {
+            item[field.newField] = item['FieldValuesAsText'][field.originalField];
+          }
+          else {
+            let taxonomyValues = item["TaxCatchAll"];
+            let taxonomyTerm = taxonomyValues.find(t => t.ID === item[field.originalField].WssId);
+            if (taxonomyTerm) {
+              item[field.newField] = taxonomyTerm;
+            }
           }
           break;
         }
@@ -120,22 +196,26 @@ export default class ListService implements IListService {
 
   public async getListItems(listQueryOptions: IListSearchListQuery, listPropertyName: string, sitePropertyName: string, sitePropertyValue: string, rowLimit: number): Promise<Array<any>> {
     try {
-      let queryConfig: QueryHelperEntity = this.GetViewFieldsWithId(listQueryOptions);
-      queryConfig.viewFields.push("Id");
+      let camlQuery: boolean = false;
       let items: any = undefined;
       if (listQueryOptions.camlQuery) {
+        camlQuery = true;
+        let queryConfig: QueryHelperEntity = this.GetViewFieldsWithId(listQueryOptions, camlQuery);
         let query = this.getCamlQueryWithViewFieldsAndRowLimit(listQueryOptions.camlQuery, queryConfig, rowLimit);
-        items = await this.getListItemsByCamlQuery(listQueryOptions.list, query);
+        items = await this.getListItemsByCamlQuery(listQueryOptions.list, query, queryConfig);
       }
       else {
         if (listQueryOptions.viewName) {
+          camlQuery = true;
+          let queryConfig: QueryHelperEntity = this.GetViewFieldsWithId(listQueryOptions, camlQuery);
           let viewInfo: any = await this.web.lists.getByTitle(listQueryOptions.list).views.getByTitle(listQueryOptions.viewName).select("ViewQuery").get();
           let query = this.getCamlQueryWithViewFieldsAndRowLimit(`<View><Query>${viewInfo.ViewQuery}</Query></View>`, queryConfig, rowLimit);
-          items = await this.getListItemsByCamlQuery(listQueryOptions.list, query);
+          items = await this.getListItemsByCamlQuery(listQueryOptions.list, query, queryConfig);
 
         }
         else {
-
+          camlQuery = false;
+          let queryConfig: QueryHelperEntity = this.GetViewFieldsWithId(listQueryOptions, camlQuery);
           if (rowLimit) {
             if (queryConfig.expandFields && queryConfig.expandFields.length > 0) {
               items = await this.web.lists.getByTitle(listQueryOptions.list).items.select(queryConfig.viewFields.join(',')).expand(queryConfig.expandFields.join(',')).usingCaching().get();
@@ -157,9 +237,9 @@ export default class ListService implements IListService {
       }
       let mappedItems = items.map(i => {
         listQueryOptions.fields.map(field => {
-          i = this.GetItemValue(i, field);
+          i = this.GetItemValue(i, field, camlQuery);
         });
-        i.FileExtension = this.GetFileExtension(i.FileLeafRef)
+        i.FileExtension = this.GetFileExtension(i.FileLeafRef);
         i["SiteUrl"] = this.baseUrl;
         i["ListName"] = listQueryOptions.list;
         if (listPropertyName) {
@@ -176,9 +256,10 @@ export default class ListService implements IListService {
     }
   }
 
-  public async getListItemById(listName: string, itemId: number): Promise<any> {
+  public async getListItemById(listQueryOptions: IListSearchListQuery, itemId: number): Promise<any> {
     try {
-      return this.web.lists.getByTitle(listName).items.getById(itemId).usingCaching().get();
+      let queryConfig: QueryHelperEntity = this.GetViewFieldsWithId(listQueryOptions, false);
+      return this.web.lists.getByTitle(listQueryOptions.list).items.getById(itemId).select(queryConfig.viewFields.join(',')).expand(queryConfig.expandFields.join(',')).usingCaching().get();
     } catch (error) {
       return Promise.reject(error);
     }
@@ -200,12 +281,12 @@ export default class ListService implements IListService {
     }
   }
 
-  private async getListItemsByCamlQuery(listName: string, camlQuery: string): Promise<Array<any>> {
+  private async getListItemsByCamlQuery(listName: string, camlQuery: string, queryConfig: QueryHelperEntity): Promise<Array<any>> {
     try {
       const caml: ICamlQuery = {
         ViewXml: camlQuery,
       };
-      return await this.web.lists.getByTitle(listName).usingCaching().getItemsByCAMLQuery(caml);
+      return this.web.lists.getByTitle(listName).usingCaching().getItemsByCAMLQuery(caml, queryConfig.expandFields.join(','));
     } catch (error) {
       return Promise.reject(error);
     }
@@ -238,8 +319,8 @@ export default class ListService implements IListService {
         xml.children = [viewFieldsXml, rowLimitXml, queryXml];
       }
 
-      let result:string = XmlParser.toString(xml);
-      return result.replace("</RowLimit></RowLimit>","</RowLimit>");
+      let result: string = XmlParser.toString(xml);
+      return result.replace("</RowLimit></RowLimit>", "</RowLimit>");
     } catch (error) {
       return `getCamlQueryWithViewFieldsAndRowLimit -> ${error.message}`;
     }

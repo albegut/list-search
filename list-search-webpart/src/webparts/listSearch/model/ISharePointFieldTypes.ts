@@ -19,6 +19,10 @@ export class SharePointFieldTypes {
         result = SharePointType.Choice;
         break;
       }
+      case 'MultiChoice': {
+        result = SharePointType.ChoiceMulti;
+        break;
+      }
       case 'Integer': {
         result = SharePointType.Integer;
         break;
@@ -91,7 +95,7 @@ export class SharePointFieldTypes {
         result = SharePointType.Guid;
         break;
       }
-      default:{
+      default: {
         result = SharePointType.Text;
       }
     }
@@ -110,6 +114,7 @@ export enum SharePointType {
   Note = "Note",
   NoteFullHtml = "NoteFullHtml",
   Choice = "Choice",
+  ChoiceMulti = "ChoiceMulti",
   Integer = "Integer",
   Number = "Number",
   Currency = "Currency",

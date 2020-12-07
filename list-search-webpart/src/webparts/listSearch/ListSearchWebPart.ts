@@ -279,7 +279,7 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
           onSelectedItem: this.onSelectedItem.bind(this),
           oneClickOption: this.properties.onClickNumberOfClicksOption == "oneClick",
           groupByField: this.properties.groupByField,
-          AnyCamlQuery: (this.properties.listsCollectionData.findIndex(listConfig => listConfig.Query != undefined || listConfig.ListView != undefined) > 0),
+          AnyCamlQuery: (this.properties.listsCollectionData.findIndex(listConfig => !this.isEmpty(listConfig.Query) || !this.isEmpty(listConfig.ListView)) > -1),
           groupByFieldType: this.properties.groupByFieldType,
           CacheType: this.properties.CacheType
         }
@@ -289,6 +289,10 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
 
 
     ReactDom.render(renderElement, this.domElement);
+  }
+
+  private isEmpty(str:string) {
+    return (!str || 0 === str.length);
   }
 
   private isConfig(): boolean {
@@ -388,7 +392,7 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
                 if (oldValue.indexOf(site) < 0) {
                   let service: ListService = new ListService(site.url, false);
                   let lists = await service.getSiteListsTitle();
-                  this.saveSiteCollectionLists(site.url, lists.map(listInfo => { return listInfo.Title; }))
+                  this.saveSiteCollectionLists(site.url, lists.map(listInfo => { return listInfo.Title; }));
                 }
               });
             }
@@ -761,7 +765,7 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
                       title: strings.CollectionDataSiteCollectionTitle,
                       type: CustomCollectionFieldType.custom,
                       onCustomRender: (field, value, onUpdate, item, itemId, onError) => {
-                        let aa = this.properties.sites.map(site => { return site.url });
+                        let aa = this.properties.sites.map(site => { return site.url; });
                         return (
                           CustomCollectionDataField.getPickerByStringOptions(aa, field, item, onUpdate, this.handleSourceSiteChange)
                         );
@@ -933,7 +937,7 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
                       onCustomRender: (field, value, onUpdate, item, itemId, onError) => {
                         if (item.SiteCollectionSource && item.ListSourceField && item.SourceField) {
                           return (
-                            CustomCollectionDataField.getPickerByStringOptions(this.properties.detailListFieldsCollectionData.filter(column => IDetailListFieldData.IsGeneralColumn(column)).map(option => { return option.ColumnTitle }), field, item, onUpdate, this.onMappingColumnChanged, onError)
+                            CustomCollectionDataField.getPickerByStringOptions(this.properties.detailListFieldsCollectionData.filter(column => IDetailListFieldData.IsGeneralColumn(column)).map(option => { return option.ColumnTitle; }), field, item, onUpdate, this.onMappingColumnChanged, onError)
                           );
                         }
                       }
@@ -1123,9 +1127,8 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
         errorMsg = strings.LblErrorDiferentRender;
       }
     }
-
-    errorFunction(fieldId, errorMsg);
     updateFunction(fieldId, option.key);
+    errorFunction(fieldId, errorMsg);
   }
 
   private saveSiteCollectionLists(site: string, Lists: string[]) {
