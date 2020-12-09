@@ -99,6 +99,7 @@ declare interface IListSearchWebPartStrings {
   LblCacheType: string;
   LblErrorDiferentRender: string;
   LblErrorSameColumn: string;
+  GroupByEmptyValue: string;
 }
 
 declare module 'ListSearchWebPartStrings' {

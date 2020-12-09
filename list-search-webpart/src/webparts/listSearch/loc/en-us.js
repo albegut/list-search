@@ -96,9 +96,10 @@ define([], function () {
     InformationPropertiesGroupName: "Webpart Information",
     AboutPropertiesGroupName: "About",
     OnClickPropertiesGroup: "On click Properties",
-    GroupFieldOptionsToSelect: "Field to order by",
+    GroupFieldOptionsToSelect: "Field to group by",
     LblCacheType: "Cache type",
     LblErrorDiferentRender: "Selected target column has other render mapping type",
-    LblErrorSameColumn: "There are duplicate mappings from this target column and the selected field-list-Site Collection values"
+    LblErrorSameColumn: "There are duplicate mappings from this target column and the selected field-list-Site Collection values",
+    GroupByEmptyValue: "Empty"
   }
 });

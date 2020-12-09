@@ -11,7 +11,8 @@ import {
   IDetailsFooterProps,
   IDetailsRowBaseProps,
   DetailsRow,
-  SelectionMode
+  SelectionMode,
+  IGroup
 } from 'office-ui-fabric-react/lib/DetailsList';
 import { IListSearchListQuery } from '../model/ListSearchQuery';
 import {
@@ -26,14 +27,11 @@ import { IReadonlyTheme } from '@microsoft/sp-component-base';
 import { IIconProps } from 'office-ui-fabric-react/lib/Icon';
 import { DefaultButton, PrimaryButton } from 'office-ui-fabric-react';
 import { Icon, ITheme } from 'office-ui-fabric-react';
-import SessionStorage from '../services/SessionStorageService';
-import { ISessionStorageElement } from '../model/ISessiongStorageElement';
 import { Shimmer } from 'office-ui-fabric-react/lib/Shimmer';
 import { Modal } from 'office-ui-fabric-react/lib/Modal';
 import { Log } from '@microsoft/sp-core-library';
-import { IBaseFieldData } from '../model/IListConfigProps';
 import { Toggle } from 'office-ui-fabric-react/lib/Toggle';
-import { SharePointFieldTypes, SharePointType } from '../model/ISharePointFieldTypes';
+import { SharePointType } from '../model/ISharePointFieldTypes';
 import { Dropdown, IDropdownOption } from 'office-ui-fabric-react/lib/Dropdown';
 import { Persona, PersonaSize } from 'office-ui-fabric-react/lib/Persona';
 import { Facepile, OverflowButtonType, IFacepilePersona } from 'office-ui-fabric-react/lib/Facepile';
@@ -45,7 +43,8 @@ import IUserField from '../model/IUserField';
 import IUrlField from '../model/IUrlField';
 import { IFrameDialog } from "@pnp/spfx-controls-react/lib/IFrameDialog";
 import { IModalType } from '../model/IModalType';
-import { isEmpty } from '@microsoft/sp-lodash-subset';
+import { groupBy, isEmpty } from '@microsoft/sp-lodash-subset';
+
 
 
 
@@ -53,7 +52,7 @@ const LOG_SOURCE = "IListdSearchWebPart";
 const filterIcon: IIconProps = { iconName: 'Filter' };
 
 export default class IListdSearchWebPart extends React.Component<IListSearchProps, IListSearchState> {
-  private groups: any[];
+  private groups: IGroup[];
   private keymapQuerys: {} = {};
   constructor(props: IListSearchProps, state: IListSearchState) {
     super(props);
@@ -116,7 +115,6 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
       let groupedItems = [];
       if (this.props.groupByField) {
         groupedItems = this._groupBy(result, this.props.groupByField, this.props.groupByFieldType);
-        this._getGroups(groupedItems);
       }
 
       this.setState({ items: result, filterItems: result, isLoading: false, columns, groupedItems });
@@ -159,7 +157,6 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
   private setNewFilterState(items: any[], generalFilter: string, collapseAllGroups: boolean, columnFilters: IColumnFilter[]) {
     if (this.props.groupByField) {
       let groupedItems = this._groupBy(items, this.props.groupByField, this.props.groupByFieldType);
-      this._getGroups(groupedItems);
       if (collapseAllGroups) {
         this.groups.map(group => group.isCollapsed = true);
       }
@@ -170,7 +167,7 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
     }
   }
 
-  private _getGroups(groupedItems: IGroupedItems[]) {
+  private _getDetailListGroups(groupedItems: IGroupedItems[]) {
     let groupedElements: number = 0;
     this.groups = this.props.groupByField && groupedItems && groupedItems.map(group => {
       let result = { key: group.GroupName, name: group.GroupName, startIndex: groupedElements, count: group.Items.length, level: 0 };
@@ -416,7 +413,7 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
           }
         case IModalType.DocumentNewTabPreview:
           {
-            window.location.replace(this.GetDocumentPreviewUrl());
+            window.open(this.GetDocumentPreviewUrl(), '_blank');
             break;
           }
       }
@@ -506,8 +503,12 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
             url={this.GetDocumentPreviewUrl()}
             hidden={this.state.isModalHidden}
             onDismiss={this._closeModal.bind(this)}
-            width={'1000px'}
-            height={'700px'} />;
+            width={`${window.innerWidth * 0.75}px`}
+            height={`${window.innerHeight * 0.75}px`}
+            modalProps={{
+              isBlocking: true,
+            }}
+          />;
           break;
         }
     }
@@ -518,9 +519,11 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
   private GetDocumentPreviewUrl(): string {
     let result: string;
     const officeExtensions = ["aspx", "doc", "docm", "docx", "dotx", "odp", "ods", "odt", "pot", "potm", "potx", "pps", "ppsx", "ppt", "pptm", "pptx", "rtf", "xls", "xlsb", "xlsm", "xlsx", "eml", "msg", "pdf", "vsd", "vsdx"];
+    const documentsWithPreview = ["csv"];
     const isOfficeDoc = !isEmpty(this.state.selectedItem.FileExtension) && officeExtensions.indexOf(this.state.selectedItem.FileExtension.toLocaleLowerCase()) !== -1;
-    if (isOfficeDoc) {
-      result = `${this.props.Context.pageContext.web.absoluteUrl}/_layouts/15/WopiFrame.aspx?sourcedoc={${this.state.selectedItem.UniqueId}}&amp;action=interactivepreview`;
+    const isDocumentWithPreview = isOfficeDoc || (!isEmpty(this.state.selectedItem.FileExtension) && documentsWithPreview.indexOf(this.state.selectedItem.FileExtension.toLocaleLowerCase()) !== -1);
+    if (isDocumentWithPreview) {
+      result = `${this.state.selectedItem.SiteUrl}/_layouts/15/WopiFrame.aspx?sourcedoc={${this.state.selectedItem.UniqueId}}&amp;action=interactivepreview`;
     }
     else {
       result = `${this.state.selectedItem.ServerUrl}`;
@@ -561,7 +564,7 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
         const options: IDropdownOption[] = [
           { key: item[propertyName], text: item[propertyName] },
         ];
-        <Dropdown
+        result = <Dropdown
           label="Disabled example with defaultSelectedKey"
           options={options}
           disabled={true}
@@ -606,11 +609,6 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
           result = <FileTypeIcon type={type} size={size} application={ApplicationType.CSV} />;
           break;
         }
-      case "csv":
-        {
-          result = <FileTypeIcon type={type} size={size} application={ApplicationType.PowerPoint} />;
-          break;
-        }
       case "email":
       case "msg":
       case "oft":
@@ -637,7 +635,7 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
       case "jpg":
       case "png":
         {
-          result = <FileTypeIcon type={type} size={size} application={ApplicationType.PowerPoint} />;
+          result = <FileTypeIcon type={type} size={size} application={ApplicationType.Image} />;
           break;
         }
       case "vsd":
@@ -824,7 +822,7 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
     return result;
   }
 
-  private GetItemValueFieldByFieldType(item: any, field: string, type: SharePointType, ommitCamlQuery: boolean = false): any {
+  private GetItemValueFieldByFieldType(item: any, field: string, type: SharePointType, ommitCamlQuery: boolean = false, setGroupByEmptyValue: boolean = false): any {
     let result: any;
     let value = item[field];
     switch (type) {
@@ -976,32 +974,19 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
         }
     }
 
-    return result;
+    return result || (setGroupByEmptyValue ? strings.GroupByEmptyValue : result);
   }
 
   private _groupBy(array, groupByField: string, groupByFieldType: SharePointType): IGroupedItems[] {
     let resArray: IGroupedItems[] = [];
     try {
-      if (groupByField) {
-        let groupByObj = array.reduce((result, currentValue) => {
-          let groupKey = this.GetItemValueFieldByFieldType(currentValue, groupByField, groupByFieldType);
-          if (groupKey != undefined) {
-            (result[groupKey] = result[groupKey] || []).push(
-              currentValue
-            );
-          }
-          else {
-            (result["Empty"] = result["Empty"] || []).push(
-              currentValue
-            );
-          }
-          return result;
-        }, {});
-        resArray = Object.keys(groupByObj).sort().map(group => {
-          return { GroupName: group, Items: groupByObj[group] };
-        });
-      }
-    } catch (error) {
+      let elementsInGroups = groupBy(array, item => this.GetItemValueFieldByFieldType(item, groupByField, groupByFieldType, false, true))
+      resArray = Object.keys(elementsInGroups).sort().map(group => {
+        return { GroupName: group, Items: elementsInGroups[group] };
+      });
+      this._getDetailListGroups(resArray);
+    } 
+    catch (error) {
       this.SetError(error, '_groupBy');
     }
 

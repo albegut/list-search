@@ -1,11 +1,7 @@
 import * as React from 'react';
 import { Dropdown } from 'office-ui-fabric-react/lib/components/Dropdown';
 import { ICustomCollectionField } from '@pnp/spfx-property-controls/lib/PropertyFieldCollectionData';
-import { TextField } from 'office-ui-fabric-react/lib/components/TextField';
-import { IMappingFieldData, IListData, ICustomOption } from '../model/IListConfigProps';
 import { IPropertyPaneDropdownOption } from '@microsoft/sp-property-pane';
-import { IListField } from '../model/IListField';
-import styles from '../ListSearchWebPart.module.scss';
 
 
 
