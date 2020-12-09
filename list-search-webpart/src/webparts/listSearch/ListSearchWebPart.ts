@@ -32,6 +32,7 @@ import { IDynamicDataCallables } from '@microsoft/sp-dynamic-data';
 import { IDynamicItem } from './model/IDynamicItem';
 import { PropertyPaneWebPartInformation } from '@pnp/spfx-property-controls/lib/PropertyPaneWebPartInformation';
 import { SharePointFieldTypes, SharePointType } from './model/ISharePointFieldTypes';
+import { IModalType } from './model/IModalType';
 
 
 
@@ -64,10 +65,7 @@ export interface IListSearchWebPartProps {
   minutesToCache: number;
   onClickSelectedOption: string;
   clickEnabled: boolean;
-  clickIsSimpleModal: boolean;
-  clickIsCompleteModal: boolean;
-  clickIsRedirect: boolean;
-  clickIsDynamicData: boolean;
+  ModalType: IModalType;
   completeModalFields: Array<ICompleteModalData>;
   redirectData: Array<IRedirectData>;
   onRedirectIdQuery: string;
@@ -269,10 +267,7 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
           UseCache: this.properties.UseCache,
           minutesToCache: this.properties.minutesToCache,
           clickEnabled: this.properties.clickEnabled,
-          clickIsSimpleModal: this.properties.clickIsSimpleModal,
-          clickIsCompleteModal: this.properties.clickIsCompleteModal,
-          clickIsRedirect: this.properties.clickIsRedirect,
-          clickIsDynamicData: this.properties.clickIsDynamicData,
+          ModalType: this.properties.ModalType,
           completeModalFields: this.properties.completeModalFields,
           redirectData: this.properties.redirectData,
           onRedirectIdQuery: this.properties.onRedirectIdQuery,
@@ -291,7 +286,7 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
     ReactDom.render(renderElement, this.domElement);
   }
 
-  private isEmpty(str:string) {
+  private isEmpty(str: string) {
     return (!str || 0 === str.length);
   }
 
@@ -409,22 +404,14 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
         }
       case "onClickSelectedOption":
         {
-          this.properties.clickIsSimpleModal = false;
-          this.properties.clickIsCompleteModal = false;
-          this.properties.clickIsRedirect = false;
-          this.properties.clickIsDynamicData = false;
           this.setSelectedOnClickOption(newValue);
-
           break;
         }
       case "clickEnabled":
         {
           if (newValue) {
             this.properties.onClickSelectedOption = "simpleModal";
-            this.properties.clickIsSimpleModal = true;
-            this.properties.clickIsCompleteModal = false;
-            this.properties.clickIsRedirect = false;
-            this.properties.clickIsDynamicData = false;
+            this.setSelectedOnClickOption("simpleModal");
           }
           break;
         }
@@ -472,26 +459,38 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
     switch (newValue) {
       case "simpleModal":
         {
-          this.properties.clickIsSimpleModal = true;
-          this.properties.redirectData = undefined;
-          this.properties.completeModalFields = undefined;
+          this.properties.ModalType = IModalType.Simple;
           break;
         }
       case "completeModal":
         {
-          this.properties.clickIsCompleteModal = true;
+          this.properties.ModalType = IModalType.Complete;
           this.properties.redirectData = undefined;
           break;
         }
       case "redirect":
         {
-          this.properties.clickIsRedirect = true;
+          this.properties.ModalType = IModalType.Redirect;
           this.properties.completeModalFields = undefined;
           break;
         }
       case "dynamicData":
         {
-          this.properties.clickIsDynamicData = true;
+          this.properties.ModalType = IModalType.DynamicData;
+          this.properties.redirectData = undefined;
+          this.properties.completeModalFields = undefined;
+          break;
+        }
+      case "documentIframePreview":
+        {
+          this.properties.ModalType = IModalType.DocumentIframePreview;
+          this.properties.redirectData = undefined;
+          this.properties.completeModalFields = undefined;
+          break;
+        }
+      case "documentNewTabPreview":
+        {
+          this.properties.ModalType = IModalType.DocumentNewTabPreview;
           this.properties.redirectData = undefined;
           this.properties.completeModalFields = undefined;
           break;
@@ -626,6 +625,14 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
         {
           key: "dynamicData",
           text: strings.OnClickDynamicText
+        },
+        {
+          key: "documentIframePreview",
+          text: strings.OnDocumentIframePreviewText
+        },
+        {
+          key: "documentNewTabPreview",
+          text: strings.OnDocumentNewTabPreviewText
         }
       ],
     }) : emptyProperty;
@@ -645,7 +652,7 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
       ],
     }) : emptyProperty;
 
-    let onClickCompleteModalPropertyPane = this.properties.clickEnabled && this.properties.clickIsCompleteModal ? PropertyFieldCollectionData("completeModalFields", {
+    let onClickCompleteModalPropertyPane = this.properties.clickEnabled && this.properties.ModalType === IModalType.Complete ? PropertyFieldCollectionData("completeModalFields", {
       key: "completeModalFields",
       label: strings.CompleteModalFieldSelector,
       panelHeader: strings.CompleteModalHeaderSelector,
@@ -693,7 +700,7 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
       ]
     }) : emptyProperty;
 
-    let onclickRedirectPropertyPane = this.properties.clickEnabled && this.properties.clickIsRedirect ? PropertyFieldCollectionData("redirectData", {
+    let onclickRedirectPropertyPane = this.properties.clickEnabled && this.properties.ModalType === IModalType.Redirect ? PropertyFieldCollectionData("redirectData", {
       key: "redirectData",
       label: strings.redirectDataFieldSelector,
       panelHeader: strings.redirectDataHeaderSelector,
@@ -727,7 +734,7 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
       ]
     }) : emptyProperty;
 
-    let onClickRedirectIdQueryParamProperyPane = this.properties.clickEnabled && this.properties.clickIsRedirect ? PropertyPaneTextField('onRedirectIdQuery', {
+    let onClickRedirectIdQueryParamProperyPane = this.properties.clickEnabled && this.properties.ModalType === IModalType.Redirect ? PropertyPaneTextField('onRedirectIdQuery', {
       label: strings.OnclickRedirectIdText,
     }) : emptyProperty;
 

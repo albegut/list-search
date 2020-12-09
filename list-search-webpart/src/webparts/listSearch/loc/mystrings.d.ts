@@ -72,6 +72,8 @@ declare interface IListSearchWebPartStrings {
   OnClickCompleteModalText: string;
   OnClickRedirectText: string;
   OnClickDynamicText: string;
+  OnDocumentIframePreviewText: string;
+  OnDocumentNewTabPreviewText: string;
   OnClickOptionsToSelect: string;
   OnclickRedirectIdText: string;
   CompleteModalFieldSelector: string;

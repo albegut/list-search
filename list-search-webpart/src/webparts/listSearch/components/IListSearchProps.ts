@@ -3,6 +3,7 @@ import { IMappingFieldData, IListData, IDetailListFieldData, ICompleteModalData,
 import { IPropertyFieldSite, } from '@pnp/spfx-property-controls/lib/PropertyFieldSitePicker';
 import { IReadonlyTheme } from '@microsoft/sp-component-base';
 import { SharePointType } from "../model/ISharePointFieldTypes";
+import { IModalType } from "../model/IModalType";
 
 
 export interface IListSearchProps {
@@ -34,10 +35,7 @@ export interface IListSearchProps {
   UseCache: boolean;
   minutesToCache: number;
   clickEnabled: boolean;
-  clickIsSimpleModal: boolean;
-  clickIsCompleteModal: boolean;
-  clickIsRedirect: boolean;
-  clickIsDynamicData: boolean;
+  ModalType: IModalType;
   completeModalFields: Array<ICompleteModalData>;
   redirectData: Array<IRedirectData>;
   onRedirectIdQuery: string;

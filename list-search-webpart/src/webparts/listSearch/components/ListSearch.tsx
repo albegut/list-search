@@ -43,6 +43,11 @@ import { Link } from 'office-ui-fabric-react';
 import { FileTypeIcon, ApplicationType, IconType, ImageSize } from "@pnp/spfx-controls-react/lib/FileTypeIcon";
 import IUserField from '../model/IUserField';
 import IUrlField from '../model/IUrlField';
+import { IFrameDialog } from "@pnp/spfx-controls-react/lib/IFrameDialog";
+import { IModalType } from '../model/IModalType';
+import { isEmpty } from '@microsoft/sp-lodash-subset';
+
+
 
 const LOG_SOURCE = "IListdSearchWebPart";
 const filterIcon: IIconProps = { iconName: 'Filter' };
@@ -351,11 +356,11 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
   }
 
   private _onItemInvoked = (item: any) => {
-    this.props.clickIsCompleteModal && this.GetCompleteItemData(item);
-    this.setState({ isModalHidden: false, selectedItem: item, isModalLoading: this.props.clickIsCompleteModal });
+    this.props.ModalType === IModalType.Complete && this.GetCompleteItemData(item);
+    this.setState({ isModalHidden: false, selectedItem: item, isModalLoading: this.props.ModalType === IModalType.Complete });
   }
 
-  private _closeModalGlosarioModal = (): void => {
+  private _closeModal = (): void => {
     this.setState({ isModalHidden: true, selectedItem: null });
   }
 
@@ -377,37 +382,50 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
 
   public GetOnClickAction() {
     try {
-      if (this.props.clickIsSimpleModal || this.props.clickIsCompleteModal) {
-        return this.GetModal();
-      }
-      else {
-        if (this.props.clickIsRedirect) {
-          let config = this.props.redirectData.filter(f => f.SiteCollectionSource == this.state.selectedItem.SiteUrl && f.ListSourceField == this.state.selectedItem.ListName);
-          if (config && config.length > 0) {
-            if (this.props.onRedirectIdQuery) {
-              var url = new URL(config[0].Url);
-              url.searchParams.append(this.props.onRedirectIdQuery, this.state.selectedItem.Id);
-              window.location.replace(url.toString());
-            }
-            else {
-              window.location.replace(`${config[0].Url}`);
-            }
+      switch (this.props.ModalType) {
+        case IModalType.Simple:
+        case IModalType.Complete:
+        case IModalType.DocumentIframePreview:
+          {
+            return this.GetModal();
+            break;
           }
-        }
-        else {
-          this.props.onSelectedItem({
-            webUrl: this.state.selectedItem.SiteUrl,
-            listName: this.state.selectedItem.ListName,
-            itemId: this.state.selectedItem.Id
-          });
-        }
+        case IModalType.Redirect:
+          {
+            let config = this.props.redirectData.filter(f => f.SiteCollectionSource == this.state.selectedItem.SiteUrl && f.ListSourceField == this.state.selectedItem.ListName);
+            if (config && config.length > 0) {
+              if (this.props.onRedirectIdQuery) {
+                var url = new URL(config[0].Url);
+                url.searchParams.append(this.props.onRedirectIdQuery, this.state.selectedItem.Id);
+                window.location.replace(url.toString());
+              }
+              else {
+                window.location.replace(`${config[0].Url}`);
+              }
+            }
+            break;
+          }
+        case IModalType.DynamicData:
+          {
+            this.props.onSelectedItem({
+              webUrl: this.state.selectedItem.SiteUrl,
+              listName: this.state.selectedItem.ListName,
+              itemId: this.state.selectedItem.Id
+            });
+            break;
+          }
+        case IModalType.DocumentNewTabPreview:
+          {
+            window.location.replace(this.GetDocumentPreviewUrl());
+            break;
+          }
       }
     } catch (error) {
       this.SetError(error, "GetOnClickAction");
     }
   }
 
-  public GetModal = () => {
+  public GetModal() {
     const cancelIcon: IIconProps = { iconName: 'Cancel' };
     const theme = getTheme();
     const iconButtonStyles = {
@@ -425,7 +443,7 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
     const modal: JSX.Element =
       <Modal
         isOpen={!this.state.isModalHidden}
-        onDismiss={this._closeModalGlosarioModal}
+        onDismiss={this._closeModal}
         isBlocking={false}
         containerClassName={styles.containerModal}
       >
@@ -434,7 +452,7 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
             <IconButton
               styles={iconButtonStyles}
               iconProps={cancelIcon}
-              onClick={this._closeModalGlosarioModal}
+              onClick={this._closeModal}
             />}
         </div>
         <div className={styles.bodyModal}>
@@ -446,38 +464,69 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
 
   private getBodyModal() {
     let body: JSX.Element;
-    if (this.props.clickIsSimpleModal) {
-      body = <>
+    switch (this.props.ModalType) {
+      case IModalType.Simple:
         {
-          this.props.mappingFieldsCollectionData.filter(f => f.SiteCollectionSource == this.state.selectedItem.SiteUrl &&
-            f.ListSourceField === this.state.selectedItem.ListName).map(val => {
-              return <>
-                <div className={styles.propertyModal}>
-                  {val.TargetField}
-                </div>
-                {this.GetModalBodyRenderByFieldType(this.state.selectedItem, val.TargetField, val.SPFieldType)}
-              </>;
-            })
+          body = <>
+            {
+              this.props.mappingFieldsCollectionData.filter(f => f.SiteCollectionSource == this.state.selectedItem.SiteUrl &&
+                f.ListSourceField === this.state.selectedItem.ListName).map(val => {
+                  return <>
+                    <div className={styles.propertyModal}>
+                      {val.TargetField}
+                    </div>
+                    {this.GetModalBodyRenderByFieldType(this.state.selectedItem, val.TargetField, val.SPFieldType)}
+                  </>;
+                })
+            }
+          </>;
+          break;
         }
-      </>;
+      case IModalType.Complete:
+        {
+          body = <>
+            {this.props.completeModalFields && this.props.completeModalFields.filter(field => field.SiteCollectionSource == this.state.selectedItem.SiteUrl &&
+              field.ListSourceField == this.state.selectedItem.ListName).map(val => {
+                return <>
+                  <div className={styles.propertyModal}>
+                    {val.TargetField}
+                  </div>
+                  <div>
+                    {this.state.isModalLoading ? <Shimmer /> : this.GetModalBodyRenderByFieldType(this.state.completeModalItemData, val.SourceField, val.SPFieldType)}
+                  </div>
+                </>;
+              })
+            }
+          </>;
+          break;
+        }
+      case IModalType.DocumentIframePreview:
+        {
+          body = <IFrameDialog
+            url={this.GetDocumentPreviewUrl()}
+            hidden={this.state.isModalHidden}
+            onDismiss={this._closeModal.bind(this)}
+            width={'1000px'}
+            height={'700px'} />;
+          break;
+        }
+    }
+
+    return body;
+  }
+
+  private GetDocumentPreviewUrl(): string {
+    let result: string;
+    const officeExtensions = ["aspx", "doc", "docm", "docx", "dotx", "odp", "ods", "odt", "pot", "potm", "potx", "pps", "ppsx", "ppt", "pptm", "pptx", "rtf", "xls", "xlsb", "xlsm", "xlsx", "eml", "msg", "pdf", "vsd", "vsdx"];
+    const isOfficeDoc = !isEmpty(this.state.selectedItem.FileExtension) && officeExtensions.indexOf(this.state.selectedItem.FileExtension.toLocaleLowerCase()) !== -1;
+    if (isOfficeDoc) {
+      result = `${this.props.Context.pageContext.web.absoluteUrl}/_layouts/15/WopiFrame.aspx?sourcedoc={${this.state.selectedItem.UniqueId}}&amp;action=interactivepreview`;
     }
     else {
-      body = <>
-        {this.props.completeModalFields && this.props.completeModalFields.filter(field => field.SiteCollectionSource == this.state.selectedItem.SiteUrl &&
-          field.ListSourceField == this.state.selectedItem.ListName).map(val => {
-            return <>
-              <div className={styles.propertyModal}>
-                {val.TargetField}
-              </div>
-              <div>
-                {this.state.isModalLoading ? <Shimmer /> : this.GetModalBodyRenderByFieldType(this.state.completeModalItemData, val.SourceField, val.SPFieldType)}
-              </div>
-            </>;
-          })
-        }
-      </>;
+      result = `${this.state.selectedItem.ServerUrl}`;
     }
-    return body;
+
+    return result;
   }
 
   private getOnRowClickRender(detailrow: any, defaultRender: any): JSX.Element {
@@ -531,7 +580,10 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
     let type = IconType.image;
     switch (extesion) {
       case "doc":
+      case "docm":
       case "docx":
+      case "dotx":
+      case "rtf":
         {
           result = <FileTypeIcon type={type} size={size} application={ApplicationType.Word} />;
           break;
@@ -539,6 +591,7 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
       case "xlsx":
       case "xls":
       case "xlsm":
+      case "xlsb":
         {
           result = <FileTypeIcon type={type} size={size} application={ApplicationType.Excel} />;
           break;
@@ -563,12 +616,18 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
       case "oft":
       case "ost":
       case "pst":
+      case "eml":
         {
           result = <FileTypeIcon type={type} size={size} application={ApplicationType.Mail} />;
           break;
         }
       case "ppt":
       case "pptx":
+      case "potm":
+      case "potx":
+      case "pps":
+      case "ppsx":
+      case "pptm":
         {
           result = <FileTypeIcon type={type} size={size} application={ApplicationType.PowerPoint} />;
           break;
@@ -579,6 +638,12 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
       case "png":
         {
           result = <FileTypeIcon type={type} size={size} application={ApplicationType.PowerPoint} />;
+          break;
+        }
+      case "vsd":
+      case "vsdx":
+        {
+          result = <FileTypeIcon type={type} size={size} application={ApplicationType.Visio} />;
           break;
         }
       default:
@@ -762,155 +827,153 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
   private GetItemValueFieldByFieldType(item: any, field: string, type: SharePointType, ommitCamlQuery: boolean = false): any {
     let result: any;
     let value = item[field];
-    if (value) {
-      switch (type) {
-        case SharePointType.FileIcon:
-          {
-            result = item.FileExtension;
-            break;
+    switch (type) {
+      case SharePointType.FileIcon:
+        {
+          result = item.FileExtension;
+          break;
+        }
+      case SharePointType.Boolean:
+        {
+          if (value) {
+            result = value.toString();
           }
-        case SharePointType.Boolean:
-          {
-            if (value) {
-              result = value.toString();
-            }
-            break;
-          }
-        case SharePointType.User:
-          {
-            if (this.props.AnyCamlQuery && !ommitCamlQuery) {
-              result = value;
-            }
-            else {
-              if (value != undefined) {
-                let user: IUserField = { Name: value.Name, Email: value.Email };
-                result = user;
-              }
-            }
-            break;
-          }
-        case SharePointType.Url:
-        case SharePointType.Image:
-          {
-            if (value != undefined) {
-              let url: IUrlField = { Url: value.Url, Description: value.Description };
-              result = url;
-            }
-            break;
-          }
-        case SharePointType.UserName:
-          {
-            if (this.props.AnyCamlQuery && !ommitCamlQuery) {
-              result = value;
-            }
-            else {
-              result = value && value.Name;
-            }
-            break;
-          }
-        case SharePointType.UserEmail:
-          {
-            if (this.props.AnyCamlQuery && !ommitCamlQuery) {
-              result = value;
-            }
-            else {
-              result = value && value.EMail;
-            }
-            break;
-          }
-        case SharePointType.UserMulti:
-          {
-            if (this.props.AnyCamlQuery && !ommitCamlQuery) {
-              result = value ? value.split(';') : "";
-            }
-            else {
-              let personas: IFacepilePersona[] = value.map(user => {
-                let email = StringUtils.GetUserEmail(user.Name);
-                return { imageUrl: email ? `/_layouts/15/userphoto.aspx?UserName=${email}` : undefined, personaName: user.Title, imageInitials: StringUtils.GetUserInitials(user.Title), };
-              });
-              result = personas;
-            }
-            break;
-          }
-        case SharePointType.Lookup:
-          {
-            if (this.props.AnyCamlQuery && !ommitCamlQuery) {
-              result = value;
-            }
-            else {
-              result = value && value.Title;
-            }
-            break;
-          }
-        case SharePointType.ChoiceMulti:
-          {
-            if (this.props.AnyCamlQuery && !ommitCamlQuery && value) {
-              result = value.split(',');
-            }
-            else {
-              result = value;
-            }
-            break;
-          }
-        case SharePointType.LookupMulti:
-          {
-            if (this.props.AnyCamlQuery && !ommitCamlQuery && value) {
-              result = value.split(';');
-            }
-            else {
-              result = value.map(value => { return value.Title; });
-            }
-            break;
-          }
-        case SharePointType.DateTime:
-          {
-            result = value && new Date(value).toLocaleDateString(this.props.Context.pageContext.cultureInfo.currentCultureName, {
-              year: "numeric",
-              month: "numeric",
-              day: "2-digit",
-              hour: "2-digit",
-              minute: "2-digit",
-              second: "2-digit",
-            });
-            break;
-          }
-        case SharePointType.Date:
-          {
-            result = value && new Date(value).toLocaleDateString(this.props.Context.pageContext.cultureInfo.currentCultureName);
-            break;
-          }
-        case SharePointType.DateLongMonth:
-          {
-            result = value && new Date(value).toLocaleDateString(this.props.Context.pageContext.cultureInfo.currentCultureName, {
-              year: "numeric",
-              month: "long",
-              day: "2-digit"
-            });
-            break;
-          }
-        case SharePointType.Taxonomy:
-          {
-            if (this.props.AnyCamlQuery && !ommitCamlQuery) {
-              result = item[field];
-            }
-            else {
-              if (value && value.Term) {
-                result = value.Term;
-              }
-            }
-            break;
-          }
-        case SharePointType.TaxonomyMulti:
-          {
-            result = value.map(tax => { return tax.Label; });
-            break;
-          }
-        default:
-          {
+          break;
+        }
+      case SharePointType.User:
+        {
+          if (this.props.AnyCamlQuery && !ommitCamlQuery) {
             result = value;
-            break;
           }
-      }
+          else {
+            if (!isEmpty(value)) {
+              let user: IUserField = { Name: value.Name, Email: value.Email };
+              result = user;
+            }
+          }
+          break;
+        }
+      case SharePointType.Url:
+      case SharePointType.Image:
+        {
+          if (!isEmpty(value)) {
+            let url: IUrlField = { Url: value.Url, Description: value.Description };
+            result = url;
+          }
+          break;
+        }
+      case SharePointType.UserName:
+        {
+          if (this.props.AnyCamlQuery && !ommitCamlQuery) {
+            result = value;
+          }
+          else {
+            result = value && value.Name;
+          }
+          break;
+        }
+      case SharePointType.UserEmail:
+        {
+          if (this.props.AnyCamlQuery && !ommitCamlQuery) {
+            result = value;
+          }
+          else {
+            result = value && value.EMail;
+          }
+          break;
+        }
+      case SharePointType.UserMulti:
+        {
+          if (this.props.AnyCamlQuery && !ommitCamlQuery) {
+            result = value ? value.split(';') : "";
+          }
+          else {
+            let personas: IFacepilePersona[] = value.map(user => {
+              let email = StringUtils.GetUserEmail(user.Name);
+              return { imageUrl: email ? `/_layouts/15/userphoto.aspx?UserName=${email}` : undefined, personaName: user.Title, imageInitials: StringUtils.GetUserInitials(user.Title), };
+            });
+            result = personas;
+          }
+          break;
+        }
+      case SharePointType.Lookup:
+        {
+          if (this.props.AnyCamlQuery && !ommitCamlQuery) {
+            result = value;
+          }
+          else {
+            result = value && value.Title;
+          }
+          break;
+        }
+      case SharePointType.ChoiceMulti:
+        {
+          if (this.props.AnyCamlQuery && !ommitCamlQuery && value) {
+            result = value.split(',');
+          }
+          else {
+            result = value;
+          }
+          break;
+        }
+      case SharePointType.LookupMulti:
+        {
+          if (this.props.AnyCamlQuery && !ommitCamlQuery && value) {
+            result = value.split(';');
+          }
+          else {
+            result = value.map(value => { return value.Title; });
+          }
+          break;
+        }
+      case SharePointType.DateTime:
+        {
+          result = value && new Date(value).toLocaleDateString(this.props.Context.pageContext.cultureInfo.currentCultureName, {
+            year: "numeric",
+            month: "numeric",
+            day: "2-digit",
+            hour: "2-digit",
+            minute: "2-digit",
+            second: "2-digit",
+          });
+          break;
+        }
+      case SharePointType.Date:
+        {
+          result = value && new Date(value).toLocaleDateString(this.props.Context.pageContext.cultureInfo.currentCultureName);
+          break;
+        }
+      case SharePointType.DateLongMonth:
+        {
+          result = value && new Date(value).toLocaleDateString(this.props.Context.pageContext.cultureInfo.currentCultureName, {
+            year: "numeric",
+            month: "long",
+            day: "2-digit"
+          });
+          break;
+        }
+      case SharePointType.Taxonomy:
+        {
+          if (this.props.AnyCamlQuery && !ommitCamlQuery) {
+            result = value;
+          }
+          else {
+            if (value && value.Term) {
+              result = value.Term;
+            }
+          }
+          break;
+        }
+      case SharePointType.TaxonomyMulti:
+        {
+          result = value.map(tax => { return tax.Label; });
+          break;
+        }
+      default:
+        {
+          result = value;
+          break;
+        }
     }
 
     return result;

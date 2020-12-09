@@ -12,6 +12,8 @@ import XMLParser from 'react-xml-parser';
 import { IWeb, Web } from '@pnp/sp/webs';
 import { IListField } from '../model/IListField';
 import { SharePointType } from '../model/ISharePointFieldTypes';
+import IResult from '../model/IResult';
+import { isEmpty } from '@microsoft/sp-lodash-subset';
 
 
 export interface QueryHelperEntity {
@@ -39,7 +41,7 @@ export default class ListService implements IListService {
   }
 
   private GetViewFieldsWithId(listQueryOptions: IListSearchListQuery, isCamlQuery: boolean): QueryHelperEntity {
-    let result: QueryHelperEntity = { expandFields: [], viewFields: ['ServerUrl', 'FileLeafRef', 'Id'] };
+    let result: QueryHelperEntity = { expandFields: [], viewFields: ['ServerUrl', 'FileLeafRef', 'Id', 'UniqueId'] };
     let hasToAddFieldsAsText: boolean = false;
     listQueryOptions.fields.map(field => {
       switch (field.fieldType) {
@@ -194,28 +196,22 @@ export default class ListService implements IListService {
     return item;
   }
 
-  public async getListItems(listQueryOptions: IListSearchListQuery, listPropertyName: string, sitePropertyName: string, sitePropertyValue: string, rowLimit: number): Promise<Array<any>> {
+  public async getListItems(listQueryOptions: IListSearchListQuery, listPropertyName: string, sitePropertyName: string, sitePropertyValue: string, rowLimit: number): Promise<Array<IResult>> {
     try {
       let camlQuery: boolean = false;
       let items: any = undefined;
+      let queryConfig: QueryHelperEntity = this.GetViewFieldsWithId(listQueryOptions, !isEmpty(listQueryOptions.camlQuery) || !isEmpty(listQueryOptions.viewName));
       if (listQueryOptions.camlQuery) {
-        camlQuery = true;
-        let queryConfig: QueryHelperEntity = this.GetViewFieldsWithId(listQueryOptions, camlQuery);
         let query = this.getCamlQueryWithViewFieldsAndRowLimit(listQueryOptions.camlQuery, queryConfig, rowLimit);
         items = await this.getListItemsByCamlQuery(listQueryOptions.list, query, queryConfig);
       }
       else {
         if (listQueryOptions.viewName) {
-          camlQuery = true;
-          let queryConfig: QueryHelperEntity = this.GetViewFieldsWithId(listQueryOptions, camlQuery);
           let viewInfo: any = await this.web.lists.getByTitle(listQueryOptions.list).views.getByTitle(listQueryOptions.viewName).select("ViewQuery").get();
           let query = this.getCamlQueryWithViewFieldsAndRowLimit(`<View><Query>${viewInfo.ViewQuery}</Query></View>`, queryConfig, rowLimit);
           items = await this.getListItemsByCamlQuery(listQueryOptions.list, query, queryConfig);
-
         }
         else {
-          camlQuery = false;
-          let queryConfig: QueryHelperEntity = this.GetViewFieldsWithId(listQueryOptions, camlQuery);
           if (rowLimit) {
             if (queryConfig.expandFields && queryConfig.expandFields.length > 0) {
               items = await this.web.lists.getByTitle(listQueryOptions.list).items.select(queryConfig.viewFields.join(',')).expand(queryConfig.expandFields.join(',')).usingCaching().get();
@@ -236,12 +232,14 @@ export default class ListService implements IListService {
 
       }
       let mappedItems = items.map(i => {
-        listQueryOptions.fields.map(field => {
-          i = this.GetItemValue(i, field, camlQuery);
-        });
         i.FileExtension = this.GetFileExtension(i.FileLeafRef);
         i["SiteUrl"] = this.baseUrl;
         i["ListName"] = listQueryOptions.list;
+        
+        listQueryOptions.fields.map(field => {
+          i = this.GetItemValue(i, field, camlQuery);
+        });
+
         if (listPropertyName) {
           i[listPropertyName] = listQueryOptions.list;
         }

@@ -73,6 +73,8 @@ define([], function () {
     OnClickCompleteModalText: "Modal with all item fields",
     OnClickRedirectText: "Redirect to url",
     OnClickDynamicText: "Dynamic data",
+    OnDocumentIframePreviewText: "Document modal preview",
+    OnDocumentNewTabPreviewText: "Document new tab preview",
     OnClickOptionsToSelect: "Item on click behaviour",
     OnclickRedirectIdText: "Item ID query param",
     CompleteModalFieldSelector: "Select fields to show",
