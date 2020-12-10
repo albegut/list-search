@@ -1,7 +1,7 @@
 export class SharePointFieldTypes {
 
   public static GetSPFieldTypeByString(fieldTypeAsString: string): SharePointType {
-    let result: SharePointType;
+    let result: SharePointType = SharePointType.Text;
     switch (fieldTypeAsString) {
       case 'Text': {
         result = SharePointType.Text;

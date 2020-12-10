@@ -88,7 +88,7 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
     this.getData();
   }
 
-  componentDidCatch(error, info) {
+  public componentDidCatch(error, info) {
     Log.warn(LOG_SOURCE, `Component throw exception ${info}`, this.props.Context.serviceScope);
     this.SetError(error, "ComponentDidCatch");
   }
@@ -353,7 +353,9 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
   }
 
   private _onItemInvoked = (item: any) => {
-    this.props.ModalType === IModalType.Complete && this.GetCompleteItemData(item);
+    if (this.props.ModalType === IModalType.Complete) {
+      this.GetCompleteItemData(item);
+    }
     this.setState({ isModalHidden: false, selectedItem: item, isModalLoading: this.props.ModalType === IModalType.Complete });
   }
 
@@ -920,7 +922,7 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
             result = value.split(';');
           }
           else {
-            result = value.map(value => { return value.Title; });
+            result = value.map(val => { return val.Title; });
           }
           break;
         }
@@ -980,12 +982,12 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
   private _groupBy(array, groupByField: string, groupByFieldType: SharePointType): IGroupedItems[] {
     let resArray: IGroupedItems[] = [];
     try {
-      let elementsInGroups = groupBy(array, item => this.GetItemValueFieldByFieldType(item, groupByField, groupByFieldType, false, true))
+      let elementsInGroups = groupBy(array, item => this.GetItemValueFieldByFieldType(item, groupByField, groupByFieldType, false, true));
       resArray = Object.keys(elementsInGroups).sort().map(group => {
         return { GroupName: group, Items: elementsInGroups[group] };
       });
       this._getDetailListGroups(resArray);
-    } 
+    }
     catch (error) {
       this.SetError(error, '_groupBy');
     }
