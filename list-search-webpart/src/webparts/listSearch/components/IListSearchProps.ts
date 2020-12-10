@@ -4,6 +4,7 @@ import { IPropertyFieldSite, } from '@pnp/spfx-property-controls/lib/PropertyFie
 import { IReadonlyTheme } from '@microsoft/sp-component-base';
 import { SharePointType } from "../model/ISharePointFieldTypes";
 import { IModalType } from "../model/IModalType";
+import { IDynamicItem } from "../model/IDynamicItem";
 
 
 export interface IListSearchProps {
@@ -39,7 +40,7 @@ export interface IListSearchProps {
   completeModalFields: Array<ICompleteModalData>;
   redirectData: Array<IRedirectData>;
   onRedirectIdQuery: string;
-  onSelectedItem: any;
+  onSelectedItem: (item: IDynamicItem) => void;
   oneClickOption: boolean;
   groupByField: string;
   groupByFieldType: SharePointType;

@@ -391,11 +391,11 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
           }
         case IModalType.Redirect:
           {
-            let config = this.props.redirectData.filter(f => f.SiteCollectionSource == this.state.selectedItem.SiteUrl && f.ListSourceField == this.state.selectedItem.ListName);
+            let config = this.props.redirectData.filter(f => f.SiteCollectionSource == this.state.selectedItem.SiteUrl && f.ListSourceField.Id == this.state.selectedItem.ListId);
             if (config && config.length > 0) {
               if (this.props.onRedirectIdQuery) {
                 var url = new URL(config[0].Url);
-                url.searchParams.append(this.props.onRedirectIdQuery, this.state.selectedItem.Id);
+                url.searchParams.append(this.props.onRedirectIdQuery, this.state.selectedItem.Id.toString());
                 window.location.replace(url.toString());
               }
               else {
@@ -408,7 +408,7 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
           {
             this.props.onSelectedItem({
               webUrl: this.state.selectedItem.SiteUrl,
-              listName: this.state.selectedItem.ListName,
+              listId: this.state.selectedItem.ListId,
               itemId: this.state.selectedItem.Id
             });
             break;
@@ -469,7 +469,7 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
           body = <>
             {
               this.props.mappingFieldsCollectionData.filter(f => f.SiteCollectionSource == this.state.selectedItem.SiteUrl &&
-                f.ListSourceField === this.state.selectedItem.ListName).map(val => {
+                f.ListSourceField.Id === this.state.selectedItem.ListId).map(val => {
                   return <>
                     <div className={styles.propertyModal}>
                       {val.TargetField}
@@ -485,7 +485,7 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
         {
           body = <>
             {this.props.completeModalFields && this.props.completeModalFields.filter(field => field.SiteCollectionSource == this.state.selectedItem.SiteUrl &&
-              field.ListSourceField == this.state.selectedItem.ListName).map(val => {
+              field.ListSourceField.Id == this.state.selectedItem.ListId).map(val => {
                 return <>
                   <div className={styles.propertyModal}>
                     {val.TargetField}

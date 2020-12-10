@@ -11,7 +11,7 @@ import { PropertyFieldCollectionData, CustomCollectionFieldType } from '@pnp/spf
 import { IListSearchProps } from './components/IListSearchProps';
 import ListSearch from './components/ListSearch';
 import * as strings from 'ListSearchWebPartStrings';
-import { IMappingFieldData, IListData, IDetailListFieldData, ICompleteModalData, IRedirectData, ICustomOption } from './model/IListConfigProps';
+import { IMappingFieldData, IListData, IDetailListFieldData, ICompleteModalData, IRedirectData, ICustomOption, SitesLists, SiteList, ListsFields, ListField, SitesFields } from './model/IListConfigProps';
 import { IPropertyFieldSite, PropertyFieldSitePicker, } from '@pnp/spfx-property-controls/lib/PropertyFieldSitePicker';
 import { PropertyFieldNumber } from '@pnp/spfx-property-controls/lib/PropertyFieldNumber';
 import { Placeholder } from "@pnp/spfx-controls-react/lib/Placeholder";
@@ -26,7 +26,6 @@ import { PropertyFieldMultiSelect } from '@pnp/spfx-property-controls/lib/Proper
 import { IDropdownOption } from 'office-ui-fabric-react/lib/components/Dropdown';
 import CustomCollectionDataField from './custompropertyPane/CustomCollectionDataField';
 import ListService from './services/ListService';
-import { IListField } from './model/IListField';
 import { IDynamicDataPropertyDefinition } from '@microsoft/sp-dynamic-data';
 import { IDynamicDataCallables } from '@microsoft/sp-dynamic-data';
 import { IDynamicItem } from './model/IDynamicItem';
@@ -80,8 +79,8 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
   private _themeProvider: ThemeProvider;
   private _themeVariant: IReadonlyTheme | undefined;
   private selectedItem: IDynamicItem;
-  private sitesLists: {} = {};
-  private ListsFields: {} = {};
+  private sitesLists: SitesLists = {};
+  private ListsFields: SitesFields = {};
 
   constructor(props) {
     super();
@@ -104,7 +103,7 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
     this._themeProvider.themeChangedEvent.add(this, this._handleThemeChangedEvent);
 
     this.context.dynamicDataSourceManager.initializeSource(this);
-    this.selectedItem = { webUrl: '', listName: '', itemId: -1 };
+    this.selectedItem = { webUrl: '', listId: '', itemId: -1 };
     return super.onInit();
   }
 
@@ -148,7 +147,7 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
   }
 
   private async loadSitesLists() {
-    let listsDataPromises: Promise<any>[] = [];
+    let listsDataPromises: Promise<Array<SiteList>>[] = [];
     let sites: string[] = [];
     this.properties.sites.map((item, index, array) => {
       if (array.indexOf(item) == index) {
@@ -160,7 +159,7 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
     let listData = await Promise.all(listsDataPromises);
 
     listData.map((lists, index) => {
-      this.saveSiteCollectionLists(sites[index], lists.map(listInfo => { return listInfo.Title; }));
+      this.saveSiteCollectionLists(sites[index], lists);
     });
   }
 
@@ -175,7 +174,7 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
       });
 
       let listsDataPromises: Promise<any>[] = [];
-      let lists: string[] = [];
+      let lists: SiteList[] = [];
       let sites: string[] = [];
 
       Object.keys(siteStructure).map(site => {
@@ -190,7 +189,7 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
       let listData = await Promise.all(listsDataPromises);
 
       listData.map((fields, index) => {
-        this.saveSiteCollectionListsFields(sites[index], lists[index], fields);
+        this.saveSiteCollectionListsFields(sites[index], lists[index].Id, fields);
       });
     }
   }
@@ -309,15 +308,15 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
       case "listsCollectionData":
         {
           this.properties.completeModalFields = this.properties.completeModalFields && this.properties.completeModalFields.filter(modalField => {
-            return newValue.filter(option => option.SiteCollectionSource === modalField.SiteCollectionSource && option.ListSourceField === modalField.ListSourceField).length > 0;
+            return newValue.filter((option: IListData) => option.SiteCollectionSource === modalField.SiteCollectionSource && option.ListSourceField === modalField.ListSourceField).length > 0;
           });
 
           this.properties.redirectData = this.properties.redirectData && this.properties.redirectData.filter(modalField => {
-            return newValue.filter(option => option.SiteCollectionSource === modalField.SiteCollectionSource && option.ListSourceField === modalField.ListSourceField).length > 0;
+            return newValue.filter((option: IListData) => option.SiteCollectionSource === modalField.SiteCollectionSource && option.ListSourceField === modalField.ListSourceField).length > 0;
           });
 
           this.properties.mappingFieldsCollectionData = this.properties.mappingFieldsCollectionData && this.properties.mappingFieldsCollectionData.filter(modalField => {
-            return newValue.filter(option => option.SiteCollectionSource === modalField.SiteCollectionSource && option.ListSourceField === modalField.ListSourceField).length > 0;
+            return newValue.filter((option: IListData) => option.SiteCollectionSource === modalField.SiteCollectionSource && option.ListSourceField === modalField.ListSourceField).length > 0;
           });
 
           this.OrderfieldsCollectionData();
@@ -386,8 +385,8 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
               await newValue.map(async site => {
                 if (oldValue.indexOf(site) < 0) {
                   let service: ListService = new ListService(site.url, false);
-                  let lists = await service.getSiteListsTitle();
-                  this.saveSiteCollectionLists(site.url, lists.map(listInfo => { return listInfo.Title; }));
+                  let lists: Array<SiteList> = await service.getSiteListsTitle();
+                  this.saveSiteCollectionLists(site.url, lists);
                 }
               });
             }
@@ -674,7 +673,7 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
           required: true,
           onCustomRender: (field, value, onUpdate, item, itemId, onError) => {
             return (
-              CustomCollectionDataField.getListPickerBySiteOptions(this.properties.listsCollectionData, field, item, onUpdate)
+              CustomCollectionDataField.getListPickerBySiteOptions(this.properties.listsCollectionData, field, item, true, onUpdate)
             );
           }
         },
@@ -683,10 +682,10 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
           title: strings.CompleteModalFieldsListField,
           type: CustomCollectionFieldType.custom,
           required: true,
-          onCustomRender: (field, value, onUpdate, item, itemId, onError) => {
+          onCustomRender: (field, value, onUpdate, item: ICompleteModalData, itemId, onError) => {
             if (item.SiteCollectionSource && item.ListSourceField) {
               return (
-                CustomCollectionDataField.getFieldPickerByList(this.ListsFields[item.SiteCollectionSource][item.ListSourceField], field, item, onUpdate, this.updateFieldType, this.getCustomsOptions())
+                CustomCollectionDataField.getFieldPickerByList(this.ListsFields[item.SiteCollectionSource][item.ListSourceField.Id], field, item, onUpdate, this.updateFieldType, this.getCustomsOptions())
               );
             }
           }
@@ -721,7 +720,7 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
           required: true,
           onCustomRender: (field, value, onUpdate, item, itemId, onError) => {
             return (
-              CustomCollectionDataField.getListPickerBySiteOptions(this.properties.listsCollectionData, field, item, onUpdate)
+              CustomCollectionDataField.getListPickerBySiteOptions(this.properties.listsCollectionData, field, item, true, onUpdate)
             );
           }
         },
@@ -772,9 +771,9 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
                       title: strings.CollectionDataSiteCollectionTitle,
                       type: CustomCollectionFieldType.custom,
                       onCustomRender: (field, value, onUpdate, item, itemId, onError) => {
-                        let aa = this.properties.sites.map(site => { return site.url; });
+                        let sites = this.properties.sites.map(site => { return site.url; });
                         return (
-                          CustomCollectionDataField.getPickerByStringOptions(aa, field, item, onUpdate, this.handleSourceSiteChange)
+                          CustomCollectionDataField.getPickerByStringOptions(sites, field, item, onUpdate, this.handleSourceSiteChange)
                         );
                       },
                       required: true,
@@ -787,7 +786,7 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
                       onCustomRender: (field, value, onUpdate, item, itemId, onError) => {
                         if (item.SiteCollectionSource) {
                           return (
-                            CustomCollectionDataField.getPickerByStringOptions(this.sitesLists[item.SiteCollectionSource], field, item, onUpdate, this.setNewListFieds)
+                            CustomCollectionDataField.getListPicker(this.sitesLists[item.SiteCollectionSource], field, item, onUpdate, this.setNewListFieds)
                           );
                         }
                       }
@@ -917,9 +916,9 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
                       title: strings.CollectionDataFieldsList,
                       type: CustomCollectionFieldType.custom,
                       required: true,
-                      onCustomRender: (field, value, onUpdate, item, itemId, onError) => {
+                      onCustomRender: (field, value, onUpdate, item: IMappingFieldData, itemId, onError) => {
                         return (
-                          CustomCollectionDataField.getListPickerBySiteOptions(this.properties.listsCollectionData, field, item, onUpdate)
+                          CustomCollectionDataField.getListPickerBySiteOptions(this.properties.listsCollectionData, field, item, true, onUpdate)
                         );
                       }
                     },
@@ -928,10 +927,10 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
                       title: strings.CollectionDataFieldsListField,
                       type: CustomCollectionFieldType.custom,
                       required: true,
-                      onCustomRender: (field, value, onUpdate, item, itemId, onError) => {
+                      onCustomRender: (field, value, onUpdate, item: IMappingFieldData, itemId, onError) => {
                         if (item.SiteCollectionSource && item.ListSourceField) {
                           return (
-                            CustomCollectionDataField.getFieldPickerByList(this.ListsFields[item.SiteCollectionSource][item.ListSourceField], field, item, onUpdate, this.updateFieldType)
+                            CustomCollectionDataField.getFieldPickerByList(this.ListsFields[item.SiteCollectionSource][item.ListSourceField.Id], field, item, onUpdate, this.updateFieldType)
                           );
                         }
                       }
@@ -941,7 +940,7 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
                       title: strings.CollectionDataFieldsTargetField,
                       type: CustomCollectionFieldType.custom,
                       required: true,
-                      onCustomRender: (field, value, onUpdate, item, itemId, onError) => {
+                      onCustomRender: (field, value, onUpdate, item: IMappingFieldData, itemId, onError) => {
                         if (item.SiteCollectionSource && item.ListSourceField && item.SourceField) {
                           return (
                             CustomCollectionDataField.getPickerByStringOptions(this.properties.detailListFieldsCollectionData.filter(column => IDetailListFieldData.IsGeneralColumn(column)).map(option => { return option.ColumnTitle; }), field, item, onUpdate, this.onMappingColumnChanged, onError)
@@ -1138,24 +1137,25 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
     errorFunction(fieldId, errorMsg);
   }
 
-  private saveSiteCollectionLists(site: string, Lists: string[]) {
+  private saveSiteCollectionLists(site: string, Lists: SiteList[]) {
     this.sitesLists[site] = Lists;
   }
 
-  private saveSiteCollectionListsFields(site: string, list: string, fields: IListField[]) {
+  private saveSiteCollectionListsFields(site: string, listId: string, fields: ListField[]) {
     if (this.ListsFields[site] == undefined) {
-      this.ListsFields[site] = {};
+      this.ListsFields[site] = [];
     }
-    this.ListsFields[site][list] = fields;
+    this.ListsFields[site][listId] = fields;
   }
 
   private async setNewListFieds(row: IListData, fieldId: string, option: IDropdownOption, updateFunction: any, errorFunction: any) {
-    updateFunction(fieldId, option.key);
+    let siteList: SiteList = { Id: option.key.toString(), Title: option.text }
+    updateFunction(fieldId, siteList);
     if (this.ListsFields[row.SiteCollectionSource] == undefined) {
-      this.ListsFields[row.SiteCollectionSource] = {};
+      this.ListsFields[row.SiteCollectionSource] = [];
     }
     let service: ListService = new ListService(row.SiteCollectionSource, false);
-    let fields: IListField[] = await service.getListFields(option.key.toString());
+    let fields: ListField[] = await service.getListFields(option.key.toString());
     this.ListsFields[row.SiteCollectionSource][option.key] = fields;
   }
 
@@ -1169,7 +1169,7 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
     if (row && this.properties.listsCollectionData) {
       let savedValue = this.properties.listsCollectionData.find(element => element.uniqueId === row.uniqueId);
       if (savedValue && savedValue.SiteCollectionSource != option.key) {
-        row.ListSourceField = "";
+        row.ListSourceField = undefined;
       }
     }
   }

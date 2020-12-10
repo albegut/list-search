@@ -10,10 +10,10 @@ import { ICamlQuery } from "@pnp/sp/lists";
 import { ICamlQueryXml } from '../model/ICamlQueryXml';
 import XMLParser from 'react-xml-parser';
 import { IWeb, Web } from '@pnp/sp/webs';
-import { IListField } from '../model/IListField';
 import { SharePointType } from '../model/ISharePointFieldTypes';
 import IResult from '../model/IResult';
 import { isEmpty } from '@microsoft/sp-lodash-subset';
+import { ListField, SiteList } from '../model/IListConfigProps';
 
 
 export interface QueryHelperEntity {
@@ -203,29 +203,29 @@ export default class ListService implements IListService {
       let queryConfig: QueryHelperEntity = this.GetViewFieldsWithId(listQueryOptions, !isEmpty(listQueryOptions.camlQuery) || !isEmpty(listQueryOptions.viewName));
       if (listQueryOptions.camlQuery) {
         let query = this.getCamlQueryWithViewFieldsAndRowLimit(listQueryOptions.camlQuery, queryConfig, rowLimit);
-        items = await this.getListItemsByCamlQuery(listQueryOptions.list, query, queryConfig);
+        items = await this.getListItemsByCamlQuery(listQueryOptions.list.Id, query, queryConfig);
       }
       else {
         if (listQueryOptions.viewName) {
-          let viewInfo: any = await this.web.lists.getByTitle(listQueryOptions.list).views.getByTitle(listQueryOptions.viewName).select("ViewQuery").get();
+          let viewInfo: any = await this.web.lists.getById(listQueryOptions.list.Id).views.getByTitle(listQueryOptions.viewName).select("ViewQuery").get();
           let query = this.getCamlQueryWithViewFieldsAndRowLimit(`<View><Query>${viewInfo.ViewQuery}</Query></View>`, queryConfig, rowLimit);
-          items = await this.getListItemsByCamlQuery(listQueryOptions.list, query, queryConfig);
+          items = await this.getListItemsByCamlQuery(listQueryOptions.list.Id, query, queryConfig);
         }
         else {
           if (rowLimit) {
             if (queryConfig.expandFields && queryConfig.expandFields.length > 0) {
-              items = await this.web.lists.getByTitle(listQueryOptions.list).items.select(queryConfig.viewFields.join(',')).expand(queryConfig.expandFields.join(',')).usingCaching().get();
+              items = await this.web.lists.getById(listQueryOptions.list.Id).items.select(queryConfig.viewFields.join(',')).expand(queryConfig.expandFields.join(',')).usingCaching().get();
             }
             else {
-              items = await this.web.lists.getByTitle(listQueryOptions.list).items.top(rowLimit).select(queryConfig.viewFields.join(',')).usingCaching().get();
+              items = await this.web.lists.getById(listQueryOptions.list.Id).items.top(rowLimit).select(queryConfig.viewFields.join(',')).usingCaching().get();
             }
           }
           else {
             if (queryConfig.expandFields && queryConfig.expandFields.length > 0) {
-              items = await this.web.lists.getByTitle(listQueryOptions.list).items.select(queryConfig.viewFields.join(',')).expand(queryConfig.expandFields.join(',')).usingCaching().get();
+              items = await this.web.lists.getById(listQueryOptions.list.Id).items.select(queryConfig.viewFields.join(',')).expand(queryConfig.expandFields.join(',')).usingCaching().get();
             }
             else {
-              items = await this.web.lists.getByTitle(listQueryOptions.list).items.select(queryConfig.viewFields.join(',')).usingCaching().get();
+              items = await this.web.lists.getById(listQueryOptions.list.Id).items.select(queryConfig.viewFields.join(',')).usingCaching().get();
             }
           }
         }
@@ -235,7 +235,7 @@ export default class ListService implements IListService {
         i.FileExtension = this.GetFileExtension(i.FileLeafRef);
         i["SiteUrl"] = this.baseUrl;
         i["ListName"] = listQueryOptions.list;
-        
+
         listQueryOptions.fields.map(field => {
           i = this.GetItemValue(i, field, camlQuery);
         });
@@ -257,34 +257,34 @@ export default class ListService implements IListService {
   public async getListItemById(listQueryOptions: IListSearchListQuery, itemId: number): Promise<any> {
     try {
       let queryConfig: QueryHelperEntity = this.GetViewFieldsWithId(listQueryOptions, false);
-      return this.web.lists.getByTitle(listQueryOptions.list).items.getById(itemId).select(queryConfig.viewFields.join(',')).expand(queryConfig.expandFields.join(',')).usingCaching().get();
+      return this.web.lists.getById(listQueryOptions.list.Id).items.getById(itemId).select(queryConfig.viewFields.join(',')).expand(queryConfig.expandFields.join(',')).usingCaching().get();
     } catch (error) {
       return Promise.reject(error);
     }
   }
 
-  public async getSiteListsTitle(): Promise<Array<any>> {
+  public async getSiteListsTitle(): Promise<Array<SiteList>> {
     try {
-      return this.web.lists.filter('Hidden eq false').select('Title').get();
+      return this.web.lists.filter('Hidden eq false').select('Title,Id').get();
     } catch (error) {
       return Promise.reject(error);
     }
   }
 
-  public async getListFields(listTitle: string): Promise<Array<IListField>> {
+  public async getListFields(listId: string): Promise<Array<ListField>> {
     try {
-      return this.web.lists.getByTitle(listTitle).fields.filter(`substringof('${encodeURIComponent("OData__")}',EntityPropertyName) eq false`).select('EntityPropertyName,Title,InternalName,TypeAsString').get();
+      return this.web.lists.getById(listId).fields.select('EntityPropertyName,Title,InternalName,TypeAsString').get();
     } catch (error) {
       return Promise.reject(error);
     }
   }
 
-  private async getListItemsByCamlQuery(listName: string, camlQuery: string, queryConfig: QueryHelperEntity): Promise<Array<any>> {
+  private async getListItemsByCamlQuery(listId: string, camlQuery: string, queryConfig: QueryHelperEntity): Promise<Array<any>> {
     try {
       const caml: ICamlQuery = {
         ViewXml: camlQuery,
       };
-      return this.web.lists.getByTitle(listName).usingCaching().getItemsByCAMLQuery(caml, queryConfig.expandFields.join(','));
+      return this.web.lists.getById(listId).usingCaching().getItemsByCAMLQuery(caml, queryConfig.expandFields.join(','));
     } catch (error) {
       return Promise.reject(error);
     }

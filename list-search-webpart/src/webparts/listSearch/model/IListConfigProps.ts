@@ -1,8 +1,20 @@
 import { SharePointType } from "./ISharePointFieldTypes";
 
-export interface IBaseFieldData {
+export interface ISimpleFieldData {
   SiteCollectionSource: string;
-  ListSourceField: string;
+  ListSourceField: SiteList;
+}
+
+export interface IListData extends ISimpleFieldData{
+  ListView: string;
+  Query: string;
+  uniqueId: string;
+  sortIdx: number;
+}
+
+export interface IBaseFieldData extends ISimpleFieldData {
+  SiteCollectionSource: string;
+  ListSourceField: SiteList;
   SourceField: string;
   TargetField: string;
   SPFieldType: SharePointType;
@@ -15,14 +27,30 @@ export interface IMappingFieldData extends IBaseFieldData {
   sortIdx: number;
 }
 
-export interface IListData {
-  SiteCollectionSource: string;
-  ListSourceField: string;
-  ListView: string;
-  Query: string;
-  uniqueId: string;
-  sortIdx: number;
+export interface SitesLists {
+  [siteName: string]: Array<SiteList>;
 }
+
+export interface SiteList {
+  Title: string;
+  Id: string;
+}
+
+export interface SitesFields {
+  [siteName: string]: Array<ListsFields>;
+}
+
+export interface ListsFields {
+  [listId: string]: Array<ListField>;
+}
+
+export interface ListField {
+  EntityPropertyName: string;
+  Title: string;
+  InternalName: string;
+  TypeAsString: string;
+}
+
 
 export class IDetailListFieldData {
 
@@ -69,7 +97,7 @@ export interface ICompleteModalData extends IBaseFieldData {
 
 export interface IRedirectData {
   SiteCollectionSource: string;
-  ListSourceField: string;
+  ListSourceField: SiteList;
   Url: string;
 }
 
