@@ -4,7 +4,6 @@
   .container {
     max-width: 700px;
     margin: 0px auto;
-    box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.2), 0 25px 50px 0 rgba(0, 0, 0, 0.1);
   }
 
   .row {
@@ -16,10 +15,8 @@
 
   .column {
     @include ms-Grid-col;
-    @include ms-lg10;
-    @include ms-xl8;
-    @include ms-xlPush2;
-    @include ms-lgPush1;
+    @include ms-sm12;
+		@include ms-lg12;
   }
 
   .title {
@@ -34,6 +31,11 @@
 
   .description {
     @include ms-font-l;
+    @include ms-fontColor-white;
+  }
+
+  .value {
+    @include ms-font-m;
     @include ms-fontColor-white;
   }
 

@@ -1,7 +1,5 @@
-import { Version } from '@microsoft/sp-core-library';
 import {
   IPropertyPaneConfiguration,
-  PropertyPaneTextField,
   DynamicDataSharedDepth,
   PropertyPaneDynamicFieldSet,
   PropertyPaneDynamicField
@@ -10,7 +8,6 @@ import {
   BaseClientSideWebPart,
   IWebPartPropertiesMetadata,
 } from '@microsoft/sp-webpart-base';
-import { escape } from '@microsoft/sp-lodash-subset';
 
 import styles from './ListSearchConsumerWebPart.module.scss';
 import * as strings from 'ListSearchConsumerWebPartStrings';
@@ -18,35 +15,53 @@ import { DynamicProperty } from '@microsoft/sp-component-base';
 
 
 export interface IListSearchConsumerWebPartProps {
-  description: string;
-  webUrl:DynamicProperty<string>;
-  listName: DynamicProperty<string>;
+  webUrl: DynamicProperty<string>;
+  listId: DynamicProperty<string>;
   itemId: DynamicProperty<number>;
 }
 
 export default class ListSearchConsumerWebPart extends BaseClientSideWebPart<IListSearchConsumerWebPartProps> {
 
   public render(): void {
-    const webUrl: string | undefined = this.properties.webUrl.tryGetValue();
-    const listName: string | undefined = this.properties.listName.tryGetValue();
-    const itemId: number | undefined = this.properties.itemId.tryGetValue();
+    let webUrl: string = this.properties.webUrl.tryGetValue();
+    let listId: string = this.properties.listId.tryGetValue();
+    let itemId: number = this.properties.itemId.tryGetValue();
+
     this.domElement.innerHTML = `
       <div class="${styles.listSearchConsumer}">
         <div class="${styles.container}">
           <div class="${styles.row}">
             <div class="${styles.column}">
               <span class="${styles.title}">List search consumer webpart</span>
-              <p class="${styles.description}">WebUrl: ${webUrl}</p>
-              <p class="${styles.description}">List Name: ${listName}</p>
-              <p class="${styles.description}">ItemId: ${itemId}</p>
+              <div class="${styles.description}">WebUrl:
+                <p class="${styles.value}">${webUrl}</p>
+              </div>
+              <div class="${styles.description}">ListId:
+                <p class="${styles.value}">${listId}</p>
+              </div>
+              <div class="${styles.description}">ItemId:
+                <p class="${styles.value}">${itemId}</p>
+              </div>
             </div>
           </div>
         </div>
       </div>`;
   }
 
-  protected get dataVersion(): Version {
-    return Version.parse('1.0');
+  protected get propertiesMetadata(): IWebPartPropertiesMetadata {
+    return {
+      // Specify the web part properties data type to allow the address
+      // information to be serialized by the SharePoint Framework.
+      'webUrl': {
+        dynamicPropertyType: 'string'
+      },
+      'listId': {
+        dynamicPropertyType: 'string'
+      },
+      'itemId': {
+        dynamicPropertyType: 'number'
+      }
+    };
   }
 
   protected getPropertyPaneConfiguration(): IPropertyPaneConfiguration {
@@ -66,8 +81,8 @@ export default class ListSearchConsumerWebPart extends BaseClientSideWebPart<ILi
                     PropertyPaneDynamicField('webUrl', {
                       label: 'Web Url'
                     }),
-                    PropertyPaneDynamicField('listName', {
-                      label: 'List Name'
+                    PropertyPaneDynamicField('listId', {
+                      label: 'List Id'
                     }),
                     PropertyPaneDynamicField('itemId', {
                       label: 'Item Id'
