@@ -48,16 +48,6 @@ export default class ListService implements IListService {
         case SharePointType.User:
         case SharePointType.UserEmail:
         case SharePointType.UserName:
-          if (isCamlQuery) {
-            hasToAddFieldsAsText = true;
-            result.viewFields.push(field.originalField);
-          }
-          else {
-            result.viewFields.push(`${field.originalField}/EMail`);
-            result.viewFields.push(`${field.originalField}/Name`);
-            result.expandFields.push(`${field.originalField}`);
-          }
-          break;
         case SharePointType.UserMulti:
           if (isCamlQuery) {
             hasToAddFieldsAsText = true;
