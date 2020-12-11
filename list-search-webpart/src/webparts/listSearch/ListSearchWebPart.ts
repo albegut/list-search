@@ -86,7 +86,7 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
     super();
     this.saveSiteCollectionLists = this.saveSiteCollectionLists.bind(this);
     this.saveSiteCollectionListsFields = this.saveSiteCollectionListsFields.bind(this);
-    this.setNewListFieds = this.setNewListFieds.bind(this);
+    this.setNewListFields = this.setNewListFields.bind(this);
     this.handleSourceSiteChange = this.handleSourceSiteChange.bind(this);
     this.updateFieldType = this.updateFieldType.bind(this);
     this.onMappingColumnChanged = this.onMappingColumnChanged.bind(this);
@@ -673,7 +673,7 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
           required: true,
           onCustomRender: (field, value, onUpdate, item, itemId, onError) => {
             return (
-              CustomCollectionDataField.getListPickerBySiteOptions(this.properties.listsCollectionData, field, item, true, onUpdate)
+              CustomCollectionDataField.getListPickerBySiteOptions(this.properties.listsCollectionData, field, item, onUpdate)
             );
           }
         },
@@ -685,7 +685,7 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
           onCustomRender: (field, value, onUpdate, item: ICompleteModalData, itemId, onError) => {
             if (item.SiteCollectionSource && item.ListSourceField) {
               return (
-                CustomCollectionDataField.getFieldPickerByList(this.ListsFields[item.SiteCollectionSource][item.ListSourceField.Id], field, item, onUpdate, this.updateFieldType, this.getCustomsOptions())
+                CustomCollectionDataField.getFieldPickerByList(this.ListsFields[item.SiteCollectionSource][item.ListSourceField], field, item, onUpdate, this.updateFieldType, this.getCustomsOptions())
               );
             }
           }
@@ -720,7 +720,7 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
           required: true,
           onCustomRender: (field, value, onUpdate, item, itemId, onError) => {
             return (
-              CustomCollectionDataField.getListPickerBySiteOptions(this.properties.listsCollectionData, field, item, true, onUpdate)
+              CustomCollectionDataField.getListPickerBySiteOptions(this.properties.listsCollectionData, field, item, onUpdate)
             );
           }
         },
@@ -786,7 +786,7 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
                       onCustomRender: (field, value, onUpdate, item, itemId, onError) => {
                         if (item.SiteCollectionSource) {
                           return (
-                            CustomCollectionDataField.getListPicker(this.sitesLists[item.SiteCollectionSource], field, item, onUpdate, this.setNewListFieds)
+                            CustomCollectionDataField.getListPicker(this.sitesLists[item.SiteCollectionSource], field, item, onUpdate, this.setNewListFields)
                           );
                         }
                       }
@@ -918,7 +918,7 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
                       required: true,
                       onCustomRender: (field, value, onUpdate, item: IMappingFieldData, itemId, onError) => {
                         return (
-                          CustomCollectionDataField.getListPickerBySiteOptions(this.properties.listsCollectionData, field, item, true, onUpdate)
+                          CustomCollectionDataField.getListPickerBySiteOptions(this.properties.listsCollectionData, field, item, onUpdate, this.UpdateListNameById)
                         );
                       }
                     },
@@ -930,7 +930,7 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
                       onCustomRender: (field, value, onUpdate, item: IMappingFieldData, itemId, onError) => {
                         if (item.SiteCollectionSource && item.ListSourceField) {
                           return (
-                            CustomCollectionDataField.getFieldPickerByList(this.ListsFields[item.SiteCollectionSource][item.ListSourceField.Id], field, item, onUpdate, this.updateFieldType)
+                            CustomCollectionDataField.getFieldPickerByList(this.ListsFields[item.SiteCollectionSource][item.ListSourceField], field, item, onUpdate, this.updateFieldType)
                           );
                         }
                       }
@@ -1148,9 +1148,9 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
     this.ListsFields[site][listId] = fields;
   }
 
-  private async setNewListFieds(row: IListData, fieldId: string, option: IDropdownOption, updateFunction: any, errorFunction: any) {
-    let siteList: SiteList = { Id: option.key.toString(), Title: option.text }
-    updateFunction(fieldId, siteList);
+  private async setNewListFields(row: IListData, fieldId: string, option: IDropdownOption, updateFunction: any, errorFunction: any) {
+    updateFunction(fieldId, option.key);
+    row.ListSourceFieldName = option.text;
     if (this.ListsFields[row.SiteCollectionSource] == undefined) {
       this.ListsFields[row.SiteCollectionSource] = [];
     }
@@ -1172,5 +1172,10 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
         row.ListSourceField = undefined;
       }
     }
+  }
+
+  private UpdateListNameById(row: IMappingFieldData, fieldId: string, option: IDropdownOption, updateFunction: any, errorFunction: any) {
+    updateFunction(fieldId, option.key);
+    row.ListSourceFieldName = option.text;
   }
 }

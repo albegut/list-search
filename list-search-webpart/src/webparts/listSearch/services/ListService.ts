@@ -5,7 +5,6 @@ import "@pnp/sp/items";
 import "@pnp/sp/views";
 import "@pnp/sp/fields";
 import IListService from "./IListService";
-import { IListSearchListQuery } from "../model/ListSearchQuery";
 import { ICamlQuery } from "@pnp/sp/lists";
 import { ICamlQueryXml } from '../model/ICamlQueryXml';
 import XMLParser from 'react-xml-parser';
@@ -14,6 +13,7 @@ import { SharePointType } from '../model/ISharePointFieldTypes';
 import IResult from '../model/IResult';
 import { isEmpty } from '@microsoft/sp-lodash-subset';
 import { ListField, SiteList } from '../model/IListConfigProps';
+import { IListSearchListQuery } from '../model/IMapQuery';
 
 
 export interface QueryHelperEntity {
@@ -231,17 +231,18 @@ export default class ListService implements IListService {
         }
 
       }
-      let mappedItems = items.map(i => {
+      let mappedItems = items.map((i: IResult) => {
         i.FileExtension = this.GetFileExtension(i.FileLeafRef);
-        i["SiteUrl"] = this.baseUrl;
-        i["ListName"] = listQueryOptions.list;
+        i.SiteUrl = this.baseUrl;
+        i.ListName = listQueryOptions.list.Title;
+        i.List = listQueryOptions.list;
 
         listQueryOptions.fields.map(field => {
           i = this.GetItemValue(i, field, camlQuery);
         });
 
         if (listPropertyName) {
-          i[listPropertyName] = listQueryOptions.list;
+          i[listPropertyName] = listQueryOptions.list.Title;
         }
         if (sitePropertyName) {
           i[sitePropertyName] = sitePropertyValue;

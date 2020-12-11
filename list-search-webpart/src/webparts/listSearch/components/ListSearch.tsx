@@ -14,7 +14,6 @@ import {
   SelectionMode,
   IGroup
 } from 'office-ui-fabric-react/lib/DetailsList';
-import { IListSearchListQuery } from '../model/ListSearchQuery';
 import {
   getTheme,
   IconButton,
@@ -44,6 +43,8 @@ import IUrlField from '../model/IUrlField';
 import { IFrameDialog } from "@pnp/spfx-controls-react/lib/IFrameDialog";
 import { IModalType } from '../model/IModalType';
 import { groupBy, isEmpty } from '@microsoft/sp-lodash-subset';
+import IResult from '../model/IResult';
+import { IListSearchListQuery, IMapQuery } from '../model/IMapQuery';
 
 
 
@@ -53,7 +54,7 @@ const filterIcon: IIconProps = { iconName: 'Filter' };
 
 export default class IListdSearchWebPart extends React.Component<IListSearchProps, IListSearchState> {
   private groups: IGroup[];
-  private keymapQuerys: {} = {};
+  private keymapQuerys: IMapQuery = {};
   constructor(props: IListSearchProps, state: IListSearchState) {
     super(props);
     this.state = {
@@ -188,15 +189,15 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
         else {
           let listQueryInfo = this.props.listsCollectionData.filter(list => list.SiteCollectionSource == item.SiteCollectionSource && list.ListSourceField == item.ListSourceField);
 
-          let newQueryListItem: IListSearchListQuery = { list: item.ListSourceField, fields: [{ originalField: item.SourceField, newField: item.TargetField, fieldType: item.SPFieldType }], camlQuery: listQueryInfo.length > 0 && listQueryInfo[0].Query, viewName: listQueryInfo.length > 0 && listQueryInfo[0].ListView };
+          let newQueryListItem: IListSearchListQuery = { list: { Id: item.ListSourceField, Title: item.ListSourceFieldName }, fields: [{ originalField: item.SourceField, newField: item.TargetField, fieldType: item.SPFieldType }], camlQuery: listQueryInfo.length > 0 && listQueryInfo[0].Query, viewName: listQueryInfo.length > 0 && listQueryInfo[0].ListView };
           this.keymapQuerys[item.SiteCollectionSource][item.ListSourceField] = newQueryListItem;
         }
       }
       else {
         let listQueryInfo = this.props.listsCollectionData.filter(list => list.SiteCollectionSource == item.SiteCollectionSource && list.ListSourceField == item.ListSourceField);
 
-        let newQueryListItem: IListSearchListQuery = { list: item.ListSourceField, fields: [{ originalField: item.SourceField, newField: item.TargetField, fieldType: item.SPFieldType }], camlQuery: listQueryInfo.length > 0 && listQueryInfo[0].Query, viewName: listQueryInfo.length > 0 && listQueryInfo[0].ListView };
-        this.keymapQuerys[item.SiteCollectionSource] = {};
+        let newQueryListItem: IListSearchListQuery = { list: { Id: item.ListSourceField, Title: item.ListSourceFieldName }, fields: [{ originalField: item.SourceField, newField: item.TargetField, fieldType: item.SPFieldType }], camlQuery: listQueryInfo.length > 0 && listQueryInfo[0].Query, viewName: listQueryInfo.length > 0 && listQueryInfo[0].ListView };
+        this.keymapQuerys[item.SiteCollectionSource] = [];
         this.keymapQuerys[item.SiteCollectionSource][item.ListSourceField] = newQueryListItem;
       }
     });
@@ -352,7 +353,7 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
     return result;
   }
 
-  private _onItemInvoked = (item: any) => {
+  private _onItemInvoked = (item: IResult) => {
     if (this.props.ModalType === IModalType.Complete) {
       this.GetCompleteItemData(item);
     }
@@ -363,11 +364,11 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
     this.setState({ isModalHidden: true, selectedItem: null });
   }
 
-  private async GetCompleteItemData(item: any) {
+  private async GetCompleteItemData(item: IResult) {
     let listService: ListService = new ListService(item.SiteUrl, this.props.UseCache, this.props.minutesToCache, this.props.CacheType);
 
     let completeItemQueryOptions: IListSearchListQuery = {
-      list: item.ListName,
+      list: item.List,
       fields: this.props.completeModalFields.map(field => { return { originalField: field.SourceField, newField: field.TargetField, fieldType: field.SPFieldType }; })
     };
 
@@ -391,7 +392,7 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
           }
         case IModalType.Redirect:
           {
-            let config = this.props.redirectData.filter(f => f.SiteCollectionSource == this.state.selectedItem.SiteUrl && f.ListSourceField.Id == this.state.selectedItem.ListId);
+            let config = this.props.redirectData.filter(f => f.SiteCollectionSource == this.state.selectedItem.SiteUrl && f.ListSourceField == this.state.selectedItem.List.Id);
             if (config && config.length > 0) {
               if (this.props.onRedirectIdQuery) {
                 var url = new URL(config[0].Url);
@@ -408,7 +409,7 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
           {
             this.props.onSelectedItem({
               webUrl: this.state.selectedItem.SiteUrl,
-              listId: this.state.selectedItem.ListId,
+              listId: this.state.selectedItem.List.Id,
               itemId: this.state.selectedItem.Id
             });
             break;
@@ -469,7 +470,7 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
           body = <>
             {
               this.props.mappingFieldsCollectionData.filter(f => f.SiteCollectionSource == this.state.selectedItem.SiteUrl &&
-                f.ListSourceField.Id === this.state.selectedItem.ListId).map(val => {
+                f.ListSourceField === this.state.selectedItem.List.Id).map(val => {
                   return <>
                     <div className={styles.propertyModal}>
                       {val.TargetField}
@@ -485,7 +486,7 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
         {
           body = <>
             {this.props.completeModalFields && this.props.completeModalFields.filter(field => field.SiteCollectionSource == this.state.selectedItem.SiteUrl &&
-              field.ListSourceField.Id == this.state.selectedItem.ListId).map(val => {
+              field.ListSourceField == this.state.selectedItem.List.Id).map(val => {
                 return <>
                   <div className={styles.propertyModal}>
                     {val.TargetField}

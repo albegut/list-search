@@ -1,5 +1,5 @@
 import { ListField } from "../model/IListConfigProps";
-import { IListSearchListQuery } from "../model/ListSearchQuery";
+import { IListSearchListQuery } from "../model/IMapQuery";
 
 export default interface IListService {
   getListItems(listQueryOptions: IListSearchListQuery, listPropertyName: string, sitePropertyName: string, sitePropertyValue: string, rowLimit: number): Promise<Array<any>>;

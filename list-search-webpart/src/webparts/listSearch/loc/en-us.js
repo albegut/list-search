@@ -67,7 +67,7 @@ define([], function () {
     ListSearchLoading: "Loading...",
     StoragePropertiesGroupName: "Cache",
     UseLocalStorage: "Use cache",
-    MinutesToCacheData: "Time (minutes) to cache the retreive data",
+    MinutesToCacheData: "Time (minutes) to cache the retreived data",
     OnClickEvent: "Use on click event",
     OnClickSimpleModalText: "Modal with current data",
     OnClickCompleteModalText: "Modal with all item fields",

@@ -1,20 +1,18 @@
 import { SharePointType } from "./ISharePointFieldTypes";
 
-export interface ISimpleFieldData {
+export interface IListData {
   SiteCollectionSource: string;
-  ListSourceField: SiteList;
-}
-
-export interface IListData extends ISimpleFieldData{
+  ListSourceField: string;
+  ListSourceFieldName: string; //Custom field to show list name in config dropdowns
   ListView: string;
   Query: string;
   uniqueId: string;
   sortIdx: number;
 }
 
-export interface IBaseFieldData extends ISimpleFieldData {
+export interface IBaseFieldData {
   SiteCollectionSource: string;
-  ListSourceField: SiteList;
+  ListSourceField: string;
   SourceField: string;
   TargetField: string;
   SPFieldType: SharePointType;
@@ -22,9 +20,33 @@ export interface IBaseFieldData extends ISimpleFieldData {
 
 
 export interface IMappingFieldData extends IBaseFieldData {
+  ListSourceFieldName: string; //Custom field to show list name in config dropdowns
   uniqueId: string;
   Order: number;
   sortIdx: number;
+}
+
+export interface ICompleteModalData extends IBaseFieldData {
+
+}
+
+export interface IRedirectData {
+  SiteCollectionSource: string;
+  ListSourceField: string;
+  Url: string;
+}
+
+export interface ListField {
+  EntityPropertyName: string;
+  Title: string;
+  InternalName: string;
+  TypeAsString: string;
+}
+
+export interface ICustomOption {
+  Key: string;
+  Option: string;
+  CustomData: string;
 }
 
 export interface SitesLists {
@@ -42,13 +64,6 @@ export interface SitesFields {
 
 export interface ListsFields {
   [listId: string]: Array<ListField>;
-}
-
-export interface ListField {
-  EntityPropertyName: string;
-  Title: string;
-  InternalName: string;
-  TypeAsString: string;
 }
 
 
@@ -89,20 +104,4 @@ export class IDetailListFieldData {
   public Searcheable: boolean;
 
 
-}
-
-export interface ICompleteModalData extends IBaseFieldData {
-
-}
-
-export interface IRedirectData {
-  SiteCollectionSource: string;
-  ListSourceField: SiteList;
-  Url: string;
-}
-
-export interface ICustomOption {
-  Key: string;
-  Option: string;
-  CustomData: string;
 }

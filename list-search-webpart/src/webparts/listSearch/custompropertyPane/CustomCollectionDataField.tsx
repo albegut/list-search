@@ -11,47 +11,46 @@ import { Checkbox } from 'office-ui-fabric-react/lib/components/Checkbox';
 
 
 export default class CustomCollectionDataField {
-  private static getCustomCollectionDropDown(options: IPropertyPaneDropdownOption[], field: ICustomCollectionField, row: any, isComplexRow: boolean, updateFunction: (fieldId: string, value: any) => void, errorFunction?: (fieldId: string, value: string) => void, customOnchangeFunction?: any): JSX.Element {
-    debugger
+  private static getCustomCollectionDropDown(options: IPropertyPaneDropdownOption[], field: ICustomCollectionField, row: any, updateFunction: (fieldId: string, value: any) => void, errorFunction?: (fieldId: string, value: string) => void, customOnchangeFunction?: any): JSX.Element {
     return (<Dropdown placeholder={field.placeholder || field.title}
       options={options.sort((a, b) => { return a.text.localeCompare(b.text); })}
-      selectedKey={isComplexRow ? row[field.id]["Id"] : row[field.id] || null}
+      selectedKey={row[field.id] || null}
       required={field.required}
       onChange={(evt, option, index) => customOnchangeFunction ? customOnchangeFunction(row, field.id, option, updateFunction, errorFunction) : updateFunction(field.id, option.key)}
       onRenderOption={field.onRenderOption}
       className="PropertyFieldCollectionData__panel__dropdown-field" />);
   }
 
-  public static getListPickerBySiteOptions(possibleOptions: Array<IListData>, field: ICustomCollectionField, row: any, isComplexRow: boolean, updateFunction: any): JSX.Element {
+  public static getListPickerBySiteOptions(possibleOptions: Array<IListData>, field: ICustomCollectionField, row: any, updateFunction: (fieldId: string, value: any) => void, customOnChange?: any): JSX.Element {
     let currentOptions = [];
     possibleOptions.filter(option => {
       if (row.SiteCollectionSource && option.SiteCollectionSource == row.SiteCollectionSource) {
         currentOptions.push({
-          key: option.ListSourceField.Id,
-          text: option.ListSourceField.Title
+          key: option.ListSourceField,
+          text: option.ListSourceFieldName
         });
       }
     });
-    return this.getCustomCollectionDropDown(currentOptions, field, row, isComplexRow, updateFunction);
+    return this.getCustomCollectionDropDown(currentOptions, field, row, updateFunction, null, customOnChange);
   }
 
-  public static getListPicker(possibleOptions: Array<SiteList>, field: ICustomCollectionField, row: any, isComplexRow: boolean, updateFunction: (fieldId: string, value: any) => void, customOnChange: any, customError?: any): JSX.Element {
+  public static getListPicker(possibleOptions: Array<SiteList>, field: ICustomCollectionField, row: any, updateFunction: (fieldId: string, value: any) => void, customOnChange: any, customError?: (fieldId: string, value: string) => string): JSX.Element {
     let options = [];
     if (possibleOptions) {
       options = possibleOptions.map(option => { return { key: option.Id, text: option.Title }; });
     }
-    return this.getCustomCollectionDropDown(options, field, row, isComplexRow, updateFunction, customError, customOnChange);
+    return this.getCustomCollectionDropDown(options, field, row, updateFunction, customError, customOnChange);
   }
 
-  public static getPickerByStringOptions(possibleOptions: Array<string>, field: ICustomCollectionField, row: any, isComplexRow: boolean, updateFunction: (fieldId: string, value: any) => void, customOnChange: any, customError?: any): JSX.Element {
+  public static getPickerByStringOptions(possibleOptions: Array<string>, field: ICustomCollectionField, row: any, updateFunction: (fieldId: string, value: any) => void, customOnChange: any, customError?: (fieldId: string, value: string) => void): JSX.Element {
     let options = [];
     if (possibleOptions) {
       options = possibleOptions.map(option => { return { key: option, text: option }; });
     }
-    return this.getCustomCollectionDropDown(options, field, row, isComplexRow, updateFunction, customError, customOnChange);
+    return this.getCustomCollectionDropDown(options, field, row, updateFunction, customError, customOnChange);
   }
 
-  public static getFieldPickerByList(possibleOptions: Array<ListField>, field: ICustomCollectionField, row: any, isComplexRow: boolean, updateFunction: (fieldId: string, value: any) => void, customOnchangeFunction?: any, customOptions?: Array<ICustomOption>): JSX.Element {
+  public static getFieldPickerByList(possibleOptions: Array<ListField>, field: ICustomCollectionField, row: any, updateFunction: (fieldId: string, value: any) => void, customOnchangeFunction?: any, customOptions?: Array<ICustomOption>): JSX.Element {
     let options = [];
     if (possibleOptions) {
       options = possibleOptions.map(option => { return { key: option.InternalName, text: option.Title, title: option.InternalName, FieldType: option.TypeAsString }; });
@@ -65,7 +64,7 @@ export default class CustomCollectionDataField {
         });
       });
     }
-    return this.getCustomCollectionDropDown(options, field, row, isComplexRow, updateFunction, null, customOnchangeFunction);
+    return this.getCustomCollectionDropDown(options, field, row, updateFunction, null, customOnchangeFunction);
   }
 
   public static getDisabledTextField(field: ICustomCollectionField, item: any, updateFunction: (fieldId: string, value: any) => void): JSX.Element {
