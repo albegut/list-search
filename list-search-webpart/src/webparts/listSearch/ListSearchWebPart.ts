@@ -174,12 +174,12 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
       });
 
       let listsDataPromises: Promise<any>[] = [];
-      let lists: SiteList[] = [];
+      let lists: string[] = [];
       let sites: string[] = [];
 
       Object.keys(siteStructure).map(site => {
         let service: ListService = new ListService(site, false);
-        siteStructure[site].map(list => {
+        siteStructure[site].map((list: string) => {
           listsDataPromises.push(service.getListFields(list));
           lists.push(list);
           sites.push(site);
@@ -189,7 +189,7 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
       let listData = await Promise.all(listsDataPromises);
 
       listData.map((fields, index) => {
-        this.saveSiteCollectionListsFields(sites[index], lists[index].Id, fields);
+        this.saveSiteCollectionListsFields(sites[index], lists[index], fields);
       });
     }
   }
