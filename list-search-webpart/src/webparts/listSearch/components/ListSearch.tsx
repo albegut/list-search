@@ -31,7 +31,6 @@ import { Modal } from 'office-ui-fabric-react/lib/Modal';
 import { Log } from '@microsoft/sp-core-library';
 import { Toggle } from 'office-ui-fabric-react/lib/Toggle';
 import { SharePointType } from '../model/ISharePointFieldTypes';
-import { Dropdown, IDropdownOption } from 'office-ui-fabric-react/lib/Dropdown';
 import { Persona, PersonaSize } from 'office-ui-fabric-react/lib/Persona';
 import { Facepile, OverflowButtonType, IFacepilePersona } from 'office-ui-fabric-react/lib/Facepile';
 import StringUtils from '../services/Utils';
@@ -300,10 +299,10 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
 
   private _onRenderDetails(detailsFooterProps: IDetailsFooterProps): JSX.Element {
     let _renderDetailsFooterItemColumn: IDetailsRowBaseProps['onRenderItemColumn'] = (item, index, column) => {
-      let filter = this.state.columnFilters.filter(colFilter => colFilter.columnName == column.name);
-      if (this.props.IndividualColumnFilter) {
+      let filter: IColumnFilter = this.state.columnFilters.find(colFilter => colFilter.columnName == column.name);
+      if (this.props.IndividualColumnFilter && column.data != SharePointType.FileIcon) {
         return (
-          <SearchBox placeholder={column.name} iconProps={filterIcon} value={filter && filter.length > 0 ? filter[0].filterToApply : ""}
+          <SearchBox placeholder={column.name} iconProps={filterIcon} value={filter ? filter.filterToApply : ""}
             underlined={true} onChange={(ev, value) => this.filterColumnListItems(column.name, value, column.data)} onClear={(ev) => this.filterColumnListItems(column.name, "", SharePointType.Text)} />
         );
       }
@@ -1004,14 +1003,14 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
         newCol.isSortedDescending = true;
       }
     });
-    if (this.props.groupByField) {
 
+    if (this.props.groupByField) {
       const newGroupedElements = this.state.groupedItems.map(group => { return { GroupName: group.GroupName, Items: this._copyAndSort(group.Items, currColumn.fieldName!, currColumn.isSortedDescending) }; });
       this.setState({ columns: newColumns, groupedItems: newGroupedElements });
     }
     else {
-      const newItems = this._copyAndSort(this.state.items, currColumn.fieldName!, currColumn.isSortedDescending);
-      this.setState({ columns: newColumns, items: newItems });
+      const newItems = this._copyAndSort(this.state.filterItems, currColumn.fieldName!, currColumn.isSortedDescending);
+      this.setState({ columns: newColumns, filterItems: newItems });
     }
 
   }
