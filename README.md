@@ -26,9 +26,14 @@ This list search web part allows the user to show data from lists or libraries. 
 
 #### Select render of the selected fields
 
-#### Open documents
+#### Open documents in modal window
+![](assets/docInModal.gif)
+
+#### Open documents in new tab
+![](assets/docInNewTab.gif)
 
 #### Use of dynamic data
+![](assets/dynamicData.gif)
 
 #### Open selected item with same data
 
