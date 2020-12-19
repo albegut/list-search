@@ -11,7 +11,7 @@
     "clean": "gulp clean",
     "test": "gulp test",
     "alldebug": "gulp clean && gulp build && gulp bundle && gulp serve",
-    "allpackage": "gulp clean && gulp build && gulp bundle --ship && gulp package-solution --ship",
+    "allpackage": "gulp clean && gulp build --ship && gulp bundle --ship && gulp package-solution --ship",
     "serve": "cross-env NODE_OPTIONS=--max_old_space_size=4096 gulp bundle --custom-serve && cross-env NODE_OPTIONS=--max_old_space_size=4096 webpack-dev-server --mode development --config ./webpack.js --env.env=dev",
     "publish-please": "publish-please",
     "prepublishOnly": "publish-please guard"
@@ -26,8 +26,7 @@
     "@pnp/spfx-controls-react": "1.19.0",
     "@pnp/spfx-property-controls": "1.19.0",
     "react-js-pagination": "3.0.3",
-    "react-xml-parser": "1.1.6",
-    "xml2js": "0.4.23"
+    "react-xml-parser": "1.1.6"
   },
   "devDependencies": {
     "@microsoft/sp-build-web": "1.11.0",
