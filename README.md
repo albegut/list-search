@@ -1,4 +1,4 @@
-# Title of the sample
+# List Search
 
 > This is how you want the sample to appear in the samples browser.
 > When naming your sample, try to give it a friendly name that describes what it does. Avoid using terms like `SharePoint` and `WebPart` -- because that's what all the samples in this repo is all about. Also, don't use `React`, `Angular`, `JavaScript`, etc. in your sample title -- unless that's what the sample is about.
@@ -67,4 +67,4 @@ This Web Part illustrates the following concepts on top of the SharePoint Framew
 * topic 2
 * topic 3
 
-<img src="https://telemetry.sharepointpnp.com/sp-dev-fx-webparts/samples/readme-template" />
+<img src="https://telemetry.sharepointpnp.com/sp-dev-fx-webparts/samples/react-list-search" />
