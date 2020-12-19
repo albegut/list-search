@@ -1,4 +1,4 @@
-# List Search
+# Title of the sample
 
 > This is how you want the sample to appear in the samples browser.
 > When naming your sample, try to give it a friendly name that describes what it does. Avoid using terms like `SharePoint` and `WebPart` -- because that's what all the samples in this repo is all about. Also, don't use `React`, `Angular`, `JavaScript`, etc. in your sample title -- unless that's what the sample is about.
@@ -34,13 +34,14 @@ Short summary on functionality and used technologies.
 
 Solution|Author(s)
 --------|---------
-react-list-search | Alberto Gutierrez ([@albegut](https://twitter.com/albertogperez))
+folder name | Author details
 
 ## Version history
 
 Version|Date|Comments
 -------|----|--------
-1.0|October  11, 2020|Initial release
+1.1|September 2, 2025|Update comment
+1.0|August 29, 2025|Initial release
 
 ## Disclaimer
 
@@ -66,4 +67,4 @@ This Web Part illustrates the following concepts on top of the SharePoint Framew
 * topic 2
 * topic 3
 
-<img src="https://telemetry.sharepointpnp.com/sp-dev-fx-webparts/samples/react-list-search" />
+<img src="https://telemetry.sharepointpnp.com/sp-dev-fx-webparts/samples/readme-template" />
