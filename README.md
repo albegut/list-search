@@ -4,13 +4,13 @@
 
 This list search web part allows the user to show data from lists or libraries. The web part can be used to (for more details see images below):
   * [Show merged items from diferents lists/libraries](#merge-items-from-different-listslibraries)
-  * [Open item data in modal window (same data shown in the table)](https://github.com/albegut/spfx#merge-items-from-different-listslibraries)
-  * [Select render by field type](https://github.com/albegut/spfx#select-render-of-the-selected-fields)
-  * [Open item detail in modal window (it allows to select the fields to show by list)](https://github.com/albegut/spfx#open-selected-item-with-selected-properties)
-  * [Open documents in modal window](https://github.com/albegut/spfx#open-documents-in-modal-window)
-  * [Open documents in new tab](https://github.com/albegut/spfx#open-documents-in-new-tab)
-  * [Use of dynamic data](https://github.com/albegut/spfx#use-of-dynamic-data)
-  * [Redirect to url](https://github.com/albegut/spfx#redirect-to-url-depends-on-selected-item)
+  * [Open item data in modal window (same data shown in the table)](#merge-items-from-different-listslibraries)
+  * [Select render by field type](#select-render-of-the-selected-fields)
+  * [Open item detail in modal window (it allows to select the fields to show by list)](#open-selected-item-with-selected-properties)
+  * [Open documents in modal window](#open-documents-in-modal-window)
+  * [Open documents in new tab](#open-documents-in-new-tab)
+  * [Use of dynamic data](#use-of-dynamic-data)
+  * [Redirect to url](#redirect-to-url-depends-on-selected-item)
 
 * Other useful functionalities:
   * General filter - the user can select which columns are filtered and which not
