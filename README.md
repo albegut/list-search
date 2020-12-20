@@ -1,19 +1,46 @@
 # List Search
 
-> This is how you want the sample to appear in the samples browser.
-> When naming your sample, try to give it a friendly name that describes what it does. Avoid using terms like `SharePoint` and `WebPart` -- because that's what all the samples in this repo is all about. Also, don't use `React`, `Angular`, `JavaScript`, etc. in your sample title -- unless that's what the sample is about.
-
 ## Summary
 
-Short summary on functionality and used technologies.
+This list search web part allows the user to show data from lists or libraries. The web part can be used to (for more details see images below):
+  * [Show merged items from diferents lists/libraries](#merge-items-from-different-listslibraries)
+  * [Open item data in modal window (same data shown in the table)](#merge-items-from-different-listslibraries)
+  * [Select render by field type](#select-render-of-the-selected-fields)
+  * [Open item detail in modal window (it allows to select the fields to show by list)](#open-selected-item-with-selected-properties)
+  * [Open documents in modal window](#open-documents-in-modal-window)
+  * [Open documents in new tab](#open-documents-in-new-tab)
+  * [Use of dynamic data](#use-of-dynamic-data)
+  * [Redirect to url](#redirect-to-url-depends-on-selected-item)
 
-> Please provide a high-quality screenshot of your web parts below. It should be stored in a folder called `assets`. 
-> If possible, use a resolution of 1920x1080.
-> If your web part uses a placeholder screen and requires the user to configure it, please use a screenshot of the web part as it appears **after** it has been configured.
-> You can add as many screen shots as you'd like to help users understand your web part without having to download it and install it.
-> DELETE THIS PARAGRAPH BEFORE SUBMITTING
+* Other useful functionalities:
+  * General filter - the user can select which columns are filtered and which not
+  * Column filter on each column
+  * Item limit to show
+  * Item pagination
+  * Group items by any field
+  * Cache to retreive the items
+  * Get section color
+  * Show item count with custom message
 
-![picture of the web part in action](assets/preview.png)
+#### Merge items from different lists/libraries
+![](assets/differentSources.gif)
+
+#### Select render of the selected fields
+
+#### Open documents in modal window
+![](assets/docInModal.gif)
+
+#### Open documents in new tab
+![](assets/docInNewTab.gif)
+
+#### Use of dynamic data
+![](assets/dynamicData.gif)
+
+#### Open selected item with same data
+
+#### Open selected item with selected properties
+
+#### Redirect to url depends on selected item
 
 ## Used SharePoint Framework Version
 
@@ -24,24 +51,17 @@ Short summary on functionality and used technologies.
 * [SharePoint Framework](https://docs.microsoft.com/sharepoint/dev/spfx/sharepoint-framework-overview)
 * [Office 365 tenant](https://docs.microsoft.com/sharepoint/dev/spfx/set-up-your-development-environment)
 
-> Update accordingly as needed.
-
-## Prerequisites
-
-> Any special pre-requisites?
-
 ## Solution
 
 Solution|Author(s)
 --------|---------
-folder name | Author details
+react-list-search | Alberto Gutiérrez ([@albertogperez](https://twitter.com/albertogperez))
 
 ## Version history
 
 Version|Date|Comments
 -------|----|--------
-1.1|September 2, 2025|Update comment
-1.0|August 29, 2025|Initial release
+1.0|December 19, 2020|Initial release
 
 ## Disclaimer
 
@@ -55,16 +75,19 @@ Version|Date|Comments
 * in the command line run:
   * `npm install`
   * `gulp serve`
-
-> Include any additional steps as needed.
+  * Open the *workbench* on your Office 365 Developer tenant
+  * Test out the web part
 
 ## Features
 
-Description of the web part with possible additional details than in short summary. 
 This Web Part illustrates the following concepts on top of the SharePoint Framework:
 
-* topic 1
-* topic 2
-* topic 3
+* Using react for building SharePoint Framework client-side web parts
+* Using [PnP Js](https://pnp.github.io/pnpjs) to retreive SharePoint data
+* Using [PnP Js](https://pnp.github.io/pnpjs/odata/caching) to cache SharePoint data
+* Connection between SharePoint Framework components using dynamic data
+* [Support of section backgrounds color ](https://docs.microsoft.com/en-us/sharepoint/dev/spfx/web-parts/guidance/supporting-section-backgrounds)
+* [Custom property pane control](https://docs.microsoft.com/en-us/sharepoint/dev/spfx/web-parts/guidance/build-custom-property-pane-controls)
+* Use [react-js-pagination](https://www.npmjs.com/package/react-js-pagination) library 
 
 <img src="https://telemetry.sharepointpnp.com/sp-dev-fx-webparts/samples/react-list-search" />
