@@ -75,12 +75,18 @@ Version|Date|Comments
 
 ## Minimal Path to Awesome
 
-* Clone this repository
-* in the command line run:
-  * `npm install`
-  * `gulp serve`
-  * Open the *workbench* on your Office 365 Developer tenant
-  * Test out the web part
+### Dev Mode
+  * Clone this repository
+  * In the command line run:
+    * Navigate to list-search-webpart or list-search-consumer folder
+    * `npm install`
+    * `gulp serve`
+    * Open the *workbench* on your Office 365 Developer tenant
+    * Test out the web part
+
+### Sppkg
+  * Download sppkg files from sppkg folder 
+  * Upload files to App Catalog
 
 ## Features
 
