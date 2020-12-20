@@ -368,7 +368,8 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
 
     let completeItemQueryOptions: IListSearchListQuery = {
       list: item.List,
-      fields: this.props.completeModalFields && this.props.completeModalFields.map(field => { return { originalField: field.SourceField, newField: field.TargetField, fieldType: field.SPFieldType }; })
+      fields: this.props.completeModalFields && this.props.completeModalFields.filter(field => field.SiteCollectionSource == item.SiteUrl &&
+        field.ListSourceField == item.List.Id).map(field => { return { originalField: field.SourceField, newField: field.TargetField, fieldType: field.SPFieldType }; })
     };
 
     let completeItem = await listService.getListItemById(completeItemQueryOptions, item.Id);
