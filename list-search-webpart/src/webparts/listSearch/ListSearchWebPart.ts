@@ -695,6 +695,19 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
           title: strings.CompleteModalFieldsTargetField,
           type: CustomCollectionFieldType.string,
           required: true
+        },
+        {
+          id: "SPFieldType",
+          title: strings.CollectionDataFieldsRenderType,
+          type: CustomCollectionFieldType.custom,
+          required: true,
+          onCustomRender: (field, value, onUpdate, item, itemId, onError) => {
+            if (item.SiteCollectionSource && item.ListSourceField && item.SourceField) {
+              return (
+                CustomCollectionDataField.getPickerByStringOptions(this.GetRenderOptionsByType(item.SPFieldType), field, item, onUpdate, undefined)
+              );
+            }
+          }
         }
       ]
     }) : emptyProperty;
