@@ -100,6 +100,12 @@ define([], function () {
     LblCacheType: "Cache type",
     LblErrorDiferentRender: "Selected target column has other render mapping type",
     LblErrorSameColumn: "There are duplicate mappings from this target column and the selected field-list-Site Collection values",
-    GroupByEmptyValue: "Empty"
+    GroupByEmptyValue: "Empty",
+    GeneralFilterConnection: 'Select query origin',
+    InitialSearchText: "Initial search query",
+    GeneralFilterInitialQueryEnabled: "Initial search enabled",
+    GeneralFilterInitialQueryOption: "Initial search type",
+    GeneralFilterInitialQueryTextValue: "Initial search value"
+
   }
 });

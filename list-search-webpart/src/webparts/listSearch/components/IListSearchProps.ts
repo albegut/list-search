@@ -46,4 +46,5 @@ export interface IListSearchProps {
   groupByFieldType: SharePointType;
   AnyCamlQuery: boolean;
   CacheType: "session" | "local";
+  generalFilterText: string;
 }

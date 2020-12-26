@@ -4,9 +4,13 @@ import { Version } from '@microsoft/sp-core-library';
 import {
   PropertyPaneTextField,
   PropertyPaneDropdown,
-  IPropertyPaneDropdownOption, PropertyPaneToggle, IPropertyPaneConfiguration
+  IPropertyPaneDropdownOption,
+  PropertyPaneToggle,
+  IPropertyPaneConfiguration,
+  PropertyPaneDynamicFieldSet,
+  PropertyPaneDynamicField
 } from '@microsoft/sp-property-pane';
-import { BaseClientSideWebPart } from '@microsoft/sp-webpart-base';
+import { BaseClientSideWebPart, IWebPartPropertiesMetadata } from '@microsoft/sp-webpart-base';
 import { PropertyFieldCollectionData, CustomCollectionFieldType } from '@pnp/spfx-property-controls/lib/PropertyFieldCollectionData';
 import { IListSearchProps } from './components/IListSearchProps';
 import ListSearch from './components/ListSearch';
@@ -17,17 +21,12 @@ import { PropertyFieldNumber } from '@pnp/spfx-property-controls/lib/PropertyFie
 import { Placeholder } from "@pnp/spfx-controls-react/lib/Placeholder";
 import { DisplayMode } from '@microsoft/sp-core-library';
 import { EmptyPropertyPane } from './custompropertyPane/EmptyPropertyPane';
-import {
-  ThemeProvider,
-  ThemeChangedEventArgs,
-  IReadonlyTheme
-} from '@microsoft/sp-component-base';
+import { ThemeProvider, ThemeChangedEventArgs, IReadonlyTheme, DynamicProperty } from '@microsoft/sp-component-base';
 import { PropertyFieldMultiSelect } from '@pnp/spfx-property-controls/lib/PropertyFieldMultiSelect';
 import { IDropdownOption } from 'office-ui-fabric-react/lib/components/Dropdown';
 import CustomCollectionDataField from './custompropertyPane/CustomCollectionDataField';
 import ListService from './services/ListService';
-import { IDynamicDataPropertyDefinition } from '@microsoft/sp-dynamic-data';
-import { IDynamicDataCallables } from '@microsoft/sp-dynamic-data';
+import { IDynamicDataCallables, IDynamicDataPropertyDefinition } from '@microsoft/sp-dynamic-data';
 import { IDynamicItem } from './model/IDynamicItem';
 import { PropertyPaneWebPartInformation } from '@pnp/spfx-property-controls/lib/PropertyPaneWebPartInformation';
 import { SharePointFieldTypes, SharePointType } from './model/ISharePointFieldTypes';
@@ -73,6 +72,10 @@ export interface IListSearchWebPartProps {
   groupByFieldType: SharePointType;
   groupedByField: boolean;
   CacheType: "session" | "local";
+  initialQueryEnabled: boolean;
+  initialQueryOption: "simpleText" | "dynamicData";
+  dynamicQueryText: DynamicProperty<string>;
+  initialQueryText: string;
 }
 
 export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearchWebPartProps> implements IDynamicDataCallables {
@@ -105,6 +108,16 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
     this.context.dynamicDataSourceManager.initializeSource(this);
     this.selectedItem = { webUrl: '', listId: '', itemId: -1 };
     return super.onInit();
+  }
+
+  protected get propertiesMetadata(): IWebPartPropertiesMetadata {
+    return {
+      // Specify the web part properties data type to allow the address
+      // information to be serialized by the SharePoint Framework.
+      'dynamicQueryText': {
+        dynamicPropertyType: 'string'
+      }
+    };
   }
 
   public getPropertyDefinitions(): ReadonlyArray<IDynamicDataPropertyDefinition> {
@@ -235,6 +248,11 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
         this.properties.SiteNameTitle = this.properties.detailListFieldsCollectionData.find(field => field.IsSiteTitle).ColumnTitle;
       }
 
+      let queryText: string = "";
+      if (this.properties.initialQueryEnabled) {
+        queryText = this.properties.initialQueryOption === "simpleText" ? this.properties.initialQueryText : this.properties.dynamicQueryText.tryGetValue();
+      }
+
       const element: React.ReactElement<IListSearchProps> = React.createElement(
         ListSearch,
         {
@@ -275,7 +293,8 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
           groupByField: this.properties.groupByField,
           AnyCamlQuery: (this.properties.listsCollectionData.findIndex(listConfig => !this.isEmpty(listConfig.Query) || !this.isEmpty(listConfig.ListView)) > -1),
           groupByFieldType: this.properties.groupByFieldType,
-          CacheType: this.properties.CacheType
+          CacheType: this.properties.CacheType,
+          generalFilterText: queryText
         }
       );
       renderElement = element;
@@ -535,6 +554,38 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
 
     let GeneralFilterPlaceHolderPropertyPane = this.properties.GeneralFilter ? PropertyPaneTextField('GeneralFilterPlaceHolderText', {
       label: strings.FilterPropertiesGeneralFilterPlaceHolder,
+    }) : emptyProperty;
+
+    let GeneralFilterInitialQueryEnabled = this.properties.GeneralFilter ? PropertyPaneToggle('initialQueryEnabled', {
+      label: strings.GeneralFilterInitialQueryEnabled,
+      checked: this.properties.initialQueryEnabled,
+    }) : emptyProperty;
+
+    let GeneralFilterInitialQueryOption = this.properties.initialQueryEnabled ? PropertyPaneDropdown('initialQueryOption', {
+      label: strings.GeneralFilterInitialQueryOption,
+      options:
+        [
+          {
+            key: "simpleText", text: "Text"
+          },
+          {
+            key: "dynamicData", text: "Dynamic data"
+          }
+        ]
+    }) : emptyProperty;
+
+    let GeneralFilterInitialQueryText = this.properties.initialQueryEnabled && this.properties.initialQueryOption === "simpleText" ?  PropertyPaneTextField('initialQueryText', {
+      label: strings.GeneralFilterInitialQueryTextValue,
+    }) : emptyProperty;
+
+
+    let GeneralFilterConnection = this.properties.initialQueryEnabled && this.properties.initialQueryOption === "dynamicData" && this.properties.GeneralFilter ? PropertyPaneDynamicFieldSet({
+      label: strings.GeneralFilterConnection,
+      fields: [
+        PropertyPaneDynamicField('dynamicQueryText', {
+          label: strings.InitialSearchText
+        })
+      ]
     }) : emptyProperty;
 
     let IndividualFilterPositionPropertyPane = this.properties.IndividualColumnFilter ? PropertyFieldMultiSelect('IndividualFilterPosition', {
@@ -1046,8 +1097,11 @@ export default class ListSearchWebPart extends BaseClientSideWebPart<IListSearch
                   label: strings.FilterPropertiesGeneralFilter,
                   checked: this.properties.GeneralFilter
                 }),
-                GeneralFilterPlaceHolderPropertyPane
-                ,
+                GeneralFilterInitialQueryEnabled,
+                GeneralFilterInitialQueryOption,
+                GeneralFilterInitialQueryText,
+                GeneralFilterConnection,
+                GeneralFilterPlaceHolderPropertyPane,
                 PropertyPaneToggle('IndividualColumnFilter', {
                   label: strings.FilterPropertiesIndividualFilter,
                   checked: this.properties.IndividualColumnFilter

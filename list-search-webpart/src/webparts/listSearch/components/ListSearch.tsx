@@ -46,8 +46,6 @@ import IResult from '../model/IResult';
 import { IListSearchListQuery, IMapQuery } from '../model/IMapQuery';
 
 
-
-
 const LOG_SOURCE = "IListdSearchWebPart";
 const filterIcon: IIconProps = { iconName: 'Filter' };
 
@@ -64,7 +62,7 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
       errorMsg: "",
       errorHeader: "",
       columnFilters: [],
-      generalFilter: "",
+      generalFilter: this.props.generalFilterText,
       isModalHidden: true,
       isModalLoading: false,
       selectedItem: null,
@@ -117,7 +115,12 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
         groupedItems = this._groupBy(result, this.props.groupByField, this.props.groupByFieldType);
       }
 
-      this.setState({ items: result, filterItems: result, isLoading: false, columns, groupedItems });
+      let filteredItems: IResult[] = result;
+      if (this.props.generalFilterText) {
+        filteredItems = this.filterListItemsByGeneralFilter(this.props.generalFilterText, false, false, result, filteredItems);
+      }
+
+      this.setState({ items: result, filterItems: filteredItems, isLoading: false, columns, groupedItems });
     } catch (error) {
       this.SetError(error, "getData");
     }
@@ -224,7 +227,7 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
 
       if (isNewFilter) newFitlers.push({ columnName: propertyName, filterToApply: propertyValue, columnType });
 
-      let itemsToRefine = (clearFilter || this.state.generalFilter) ? this.filterListItemsByGeneralFilter(this.state.generalFilter, true, false)
+      let itemsToRefine = (clearFilter || this.state.generalFilter) ? this.filterListItemsByGeneralFilter(this.state.generalFilter, true, false, this.state.items, this.state.filterItems)
         : (isMoreRestricted ? this.state.filterItems : this.state.items);
 
       this.filterListItemsByColumnsFilter(itemsToRefine, newFitlers, false);
@@ -255,10 +258,10 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
     }
   }
 
-  public filterListItemsByGeneralFilter(valueToFilter: string, isClearFilter: boolean, reloadComponents: boolean) {
+  public filterListItemsByGeneralFilter(valueToFilter: string, isClearFilter: boolean, reloadComponents: boolean, allItems: IResult[], filteredItems: IResult[]) {
     if (valueToFilter && valueToFilter.length > 0) {
       let filterItems: Array<any> = [];
-      let itemsToFilter = (isClearFilter || valueToFilter.length < this.state.generalFilter.length) ? this.state.items : this.state.filterItems;
+      let itemsToFilter = (isClearFilter || valueToFilter.length < this.state.generalFilter.length) ? allItems : filteredItems;
       itemsToFilter.map(item => {
         this.props.GeneralSearcheableFields.map(field => {
           if (filterItems.indexOf(item) < 0) {
@@ -282,7 +285,7 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
         this.clearGeneralFilter();
       }
       else {
-        return this.state.items;
+        return allItems;
       }
     }
   }
@@ -1031,14 +1034,16 @@ export default class IListdSearchWebPart extends React.Component<IListSearchProp
                 <MessageBar
                   messageBarType={MessageBarType.error}
                   isMultiline={false}
-
                   truncated={true}>
                   <b>{this.state.errorHeader}</b>{this.state.errorMsg}
                 </MessageBar> :
                 <React.Fragment>
                   {this.props.clickEnabled && !this.state.isModalHidden && this.state.selectedItem && this.GetOnClickAction()}
                   <div className={styles.rowTopInformation}>
-                    {this.props.GeneralFilter && <div className={this.props.ShowClearAllFilters ? styles.ColGeneralFilterWithBtn : styles.ColGeneralFilterOnly}><SearchBox value={this.state.generalFilter} placeholder={this.props.GeneralFilterPlaceHolderText} onClear={() => this.clearGeneralFilter()} onChange={(ev, newValue) => this.filterListItemsByGeneralFilter(newValue, false, true)} /></div>}
+                    {this.props.GeneralFilter &&
+                      <div className={this.props.ShowClearAllFilters ? styles.ColGeneralFilterWithBtn : styles.ColGeneralFilterOnly}>
+                        <SearchBox value={this.state.generalFilter} placeholder={this.props.GeneralFilterPlaceHolderText} onClear={() => this.clearGeneralFilter()} onChange={(ev, newValue) => this.filterListItemsByGeneralFilter(newValue, false, true, this.state.items, this.state.filterItems)} />
+                      </div>}
                     <div className={styles.ColClearAll}>
                       {this.props.ShowClearAllFilters && clearAllButton}
                     </div>

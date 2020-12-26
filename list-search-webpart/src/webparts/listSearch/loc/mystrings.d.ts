@@ -100,6 +100,11 @@ declare interface IListSearchWebPartStrings {
   LblErrorDiferentRender: string;
   LblErrorSameColumn: string;
   GroupByEmptyValue: string;
+  GeneralFilterConnection: string;
+  InitialSearchText: string;
+  GeneralFilterInitialQueryEnabled: string;
+  GeneralFilterInitialQueryOption: string;
+  GeneralFilterInitialQueryTextValue: string;
 }
 
 declare module 'ListSearchWebPartStrings' {
