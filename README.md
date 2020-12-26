@@ -26,6 +26,7 @@ This list search web part allows the user to show data from lists or libraries. 
 ![](assets/differentSources.gif)
 
 #### Select render of the selected fields
+![](assets/selectFieldRenderType.gif)
 
 #### Open documents in modal window
 ![](assets/docInModal.gif)
@@ -37,10 +38,13 @@ This list search web part allows the user to show data from lists or libraries. 
 ![](assets/dynamicData.gif)
 
 #### Open selected item with same data
+![](assets/itemCurrentData.gif)
 
 #### Open selected item with selected properties
+![](assets/itemSelectedData.gif)
 
 #### Redirect to url depends on selected item
+![](assets/redirectToUrl.gif)
 
 ## Used SharePoint Framework Version
 
@@ -61,7 +65,7 @@ react-list-search | Alberto Gutiérrez ([@albertogperez](https://twitter.com/alb
 
 Version|Date|Comments
 -------|----|--------
-1.0|December 19, 2020|Initial release
+1.0|December 20, 2020|Initial release
 
 ## Disclaimer
 
@@ -71,12 +75,18 @@ Version|Date|Comments
 
 ## Minimal Path to Awesome
 
-* Clone this repository
-* in the command line run:
-  * `npm install`
-  * `gulp serve`
-  * Open the *workbench* on your Office 365 Developer tenant
-  * Test out the web part
+### Dev Mode
+  * Clone this repository
+  * In the command line run:
+    * Navigate to list-search-webpart or list-search-consumer folder
+    * `npm install`
+    * `gulp serve`
+    * Open the *workbench* on your Office 365 Developer tenant
+    * Test out the web part
+
+### Sppkg
+  * Download sppkg files from sppkg folder 
+  * Upload files to App Catalog
 
 ## Features
 
