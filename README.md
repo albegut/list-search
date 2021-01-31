@@ -78,7 +78,7 @@ Version|Date|Comments
 ### Dev Mode
   * Clone this repository
   * In the command line run:
-    * Navigate to list-search-webpart or list-search-consumer folder
+    * Navigate to list-search-webpart
     * `npm install`
     * `gulp serve`
     * Open the *workbench* on your Office 365 Developer tenant
